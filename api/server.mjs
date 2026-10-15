@@ -3,7 +3,7 @@ import { searchFlights } from "./provider.mjs";
 import { validateSearch } from "./validation.mjs";
 
 const port = Number(process.env.PORT || 3000);
-const allowedOrigin = process.env.ALLOWED_ORIGIN || "*";
+const allowedOrigin = process.env.ALLOWED_ORIGIN || "http://localhost:3000";
 const json = (res, status, body) => { res.writeHead(status, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "access-control-allow-origin": allowedOrigin, "access-control-allow-methods": "GET,POST,OPTIONS", "access-control-allow-headers": "content-type" }); res.end(JSON.stringify(body)); };
 
 const server = http.createServer(async (req, res) => {
