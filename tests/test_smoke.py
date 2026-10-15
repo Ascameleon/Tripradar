@@ -26,7 +26,8 @@ class TripRadarSmokeTests(unittest.TestCase):
 
     def test_required_ui_sections_exist(self):
         for element_id in ("searchForm", "origin", "dateFrom", "dateTo", "budget",
-                           "results", "empty", "savedList", "favCount", "toast"):
+                           "results", "empty", "savedList", "favCount", "toast",
+                           "destinationFilter", "sortBy"):
             with self.subTest(element_id=element_id):
                 self.assertIn(element_id, self.parser.ids)
 
@@ -44,6 +45,13 @@ class TripRadarSmokeTests(unittest.TestCase):
         prices = [int(x) for x in re.findall(r'country:"[^"]+",price:(\d+)', HTML)]
         self.assertGreaterEqual(len(prices), 5)
         self.assertEqual(prices, sorted(prices))
+
+    def test_destination_filters_and_hotel_links_are_wired(self):
+        self.assertIn('sort==="price-desc"', HTML)
+        self.assertIn('addEventListener("input",render)', HTML)
+        self.assertIn('data-stay=', HTML)
+        self.assertIn('url.searchParams.set("ss",d.city)', HTML)
+        self.assertIn('https://www.booking.com/searchresults.html', HTML)
 
     def test_no_inline_event_attributes(self):
         self.assertNotRegex(HTML, r'\son(?:click|submit|change)\s*=')
