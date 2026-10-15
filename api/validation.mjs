@@ -20,7 +20,7 @@ export function validateHotelSearch(input, now = new Date()) {
   const isoDate = /^\d{4}-\d{2}-\d{2}$/;
   const parseDate = (value) => {
     if (!isoDate.test(value)) return null;
-    const parsed = new Date(\`\${value}T00:00:00Z\`);
+    const parsed = new Date(`${value}T00:00:00Z`);
     return Number.isNaN(parsed.valueOf()) || parsed.toISOString().slice(0, 10) !== value ? null : parsed;
   };
   const checkIn = parseDate(checkInDate);
