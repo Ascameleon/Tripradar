@@ -9,7 +9,8 @@
 - Favoris persistants dans le navigateur.
 - Vérification basique de cohérence des dates.
 - Filtre texte et tri par prix croissant/décroissant ou nom.
-- Liens de sortie vers Google Flights et une recherche d’hébergements Booking.com.
+- Recherche live optionnelle sur les cartes de vols si l’API Amadeus est configurée; bascule explicite vers Google Flights sinon.
+- Liens vers les recherches d’hébergements Booking.com (sans tarifs hôteliers intégrés).
 - Manifest PWA, icône dédiée et cache du shell pour ouvrir l’application hors ligne après la première visite.
 - Interface responsive mobile/desktop, sans dépendance ni build.
 
@@ -25,7 +26,7 @@ Une API Node.js sans dépendances est disponible dans `api/`. Elle utilise l'API
 
 Tests locaux : `node --test tests/*.mjs api/*.test.mjs`.
 
-**Important :** la recherche live côté serveur est amorcée, mais n'est pas encore reliée au formulaire de l'interface, car celui-ci accepte actuellement des noms de villes libres et ne dispose d'aucun identifiant fournisseur. Il faut aussi configurer des identifiants valides avant qu'une recherche live puisse répondre. Les prix du catalogue affiché restent fictifs.
+**Intégration interface :** les boutons « Vols » tentent maintenant une recherche live via `/api/health` puis `/api/flights/search`. Les départs reconnus incluent Alger (ALG), Oran (ORN), Constantine (CZL) et Annaba (AAE), ainsi que les codes IATA saisis directement. Le navigateur peut recevoir une URL d’API distincte via `window.TRIPRADAR_API_BASE` défini avant le script de l’application. Si l’API ou les identifiants Amadeus sont indisponibles, l’interface n’invente aucun tarif et propose Google Flights comme solution externe. L’intégration actuelle porte sur les vols aller uniquement; les hôtels ne sont pas connectés à une API.
 
 ## Lancer
 
@@ -33,7 +34,7 @@ Ouvrir `index.html` dans un navigateur moderne. Pour installer l’application e
 
 ## Limites connues — transparence
 
-Les prix et durées affichés sont **fictifs, à titre de démonstration**. Le prototype ne lit pas encore de tarifs de vols ou d'hôtels en temps réel et ne réserve rien. Les liens externes constituent une passerelle de recherche, pas une intégration de données certifiée. Les dates saisies servent à la validation de formulaire; le lien fournisseur devra être complété avec un itinéraire et des dates vérifiés avant lancement public.
+Les prix et durées affichés sont **fictifs, à titre de démonstration**. Seule la recherche aller peut afficher des tarifs live, et uniquement quand l’API Amadeus est correctement configurée et accessible. Le catalogue de destinations, ses prix d’exemple et les hôtels ne sont pas connectés à des tarifs en temps réel. Le prototype ne réserve rien. Les liens externes constituent une passerelle de recherche, pas une intégration de données certifiée. Les dates saisies servent à la validation de formulaire; le lien fournisseur devra être complété avec un itinéraire et des dates vérifiés avant lancement public.
 
 ## Prochaines étapes vers un produit fiable
 
