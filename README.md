@@ -21,17 +21,23 @@ Une API Node.js sans dépendances est disponible dans `api/`. Elle utilise l'API
 1. Installer Node.js 20 ou plus récent.
 2. Copier `.env.example` vers `.env` et renseigner `AMADEUS_CLIENT_ID` et `AMADEUS_CLIENT_SECRET` depuis votre compte fournisseur. Ne jamais committer `.env`.
 3. Définir `ALLOWED_ORIGIN` sur l’origine exacte de l’interface en production; l’API rejette les autres origines navigateur.
-4. Charger les variables d'environnement dans le terminal, puis lancer `node api/server.mjs`.
+4. En local, lancer `node --env-file=.env api/server.mjs` (Node.js 20.6+). En production, fournir les variables comme secrets d’environnement de la plateforme.
 5. Vérifier `GET /api/health`, puis tester `POST /api/flights/search` (`origin`, `destination`, `departureDate`, `adults`, `currencyCode`) et `POST /api/hotels/search` (`cityCode`, `checkInDate`, `checkOutDate`, `adults`, `currencyCode`).
 6. Utiliser l'environnement de test jusqu'à validation du compte et de l'accès production.
 
-Tests locaux : `node --test tests/*.mjs api/*.test.mjs`. Les tests couvrent les validations vols/hôtels, la normalisation des offres et leur tri par prix; la CI GitHub Actions exécute cette suite à chaque push sur `main`.
+Tests locaux : `npm test` (ou `node --test tests/*.mjs api/*.test.mjs`). Les tests couvrent les validations vols/hôtels, la normalisation des offres et leur tri par prix; la CI GitHub Actions exécute cette suite à chaque push sur `main`.
 
 **Intégration interface :** les boutons « Vols » tentent maintenant une recherche live via `/api/health` puis `/api/flights/search`. Les départs reconnus incluent Alger (ALG), Oran (ORN), Constantine (CZL) et Annaba (AAE), ainsi que les codes IATA saisis directement. Pour une API hébergée sur un autre domaine, renseigner son URL dans `config.js` (`window.TRIPRADAR_API_BASE`) avant déploiement. Définir `ALLOWED_ORIGIN` côté serveur sur l’origine exacte de l’interface en HTTPS, sans joker. Si l’API ou les identifiants Amadeus sont indisponibles, l’interface n’invente aucun tarif et propose une recherche externe. La recherche de vols porte sur l’aller; les hôtels peuvent renvoyer des offres pour les dates du séjour lorsque l’accès fournisseur le permet.
 
 ## Lancer
 
 Ouvrir `index.html` dans un navigateur moderne. Pour installer l’application et activer le mode hors ligne, la servir en HTTPS (par exemple via GitHub Pages) puis utiliser « Ajouter à l’écran d’accueil » dans le navigateur. Le service worker n’est pas disponible en ouverture `file://`.
+
+## Déploiement
+
+- **Interface statique :** publier `index.html`, `config.js`, `manifest.webmanifest`, `icon.svg` et `sw.js` sur un hébergement HTTPS statique. Si l’API est sur un autre domaine, définir son URL dans `config.js` avant publication.
+- **API Docker :** construire avec `docker build -t tripradar-api .`, puis lancer le conteneur en fournissant `AMADEUS_CLIENT_ID`, `AMADEUS_CLIENT_SECRET` et `ALLOWED_ORIGIN` comme variables d’environnement. Ne jamais incorporer les secrets à l’image.
+- L’API écoute sur le port `3000` par défaut. Déployer l’API et l’interface sur des services séparés reste possible grâce à la configuration d’origine CORS.
 
 ## Limites connues — transparence
 
