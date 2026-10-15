@@ -1,11 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import vm from "node:vm";
 
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const manifest = JSON.parse(await readFile(new URL("../manifest.webmanifest", import.meta.url), "utf8"));
 const worker = await readFile(new URL("../sw.js", import.meta.url), "utf8");
 const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
+
+
+test("inline application JavaScript parses without syntax errors", () => {
+  const script = html.match(/<script>([\\s\\S]*?)<\\/script>/)?.[1];
+  assert.ok(script, "inline application script must exist");
+  assert.doesNotThrow(() => new vm.Script(script));
+});
 
 test("TripRadar exposes the core search, filter, and favorites controls", () => {
   for (const id of ["searchForm", "origin", "dateFrom", "dateTo", "budget", "destinationFilter", "sortBy", "results", "savedList", "favCount"]) {
