@@ -49,7 +49,7 @@ Les prix et durées du catalogue de destinations sont **fictifs, à titre de dé
 2. Étendre le calcul au retour, aux voyageurs/chambres configurables et aux frais connus, sans mélanger les devises.
 3. Ajouter les filtres de durée, bagages, escales, devise, nombre de voyageurs et coût total du séjour.
 4. Tester l’installation PWA, le mode hors ligne, l’accessibilité et les parcours mobiles Android/iOS.
-5. Automatiser les tests fonctionnels et de non-régression avant le lancement.
+5. Exécuter les tests de bout en bout sur l’API déployée, confirmer les tarifs et l’inventaire réels, puis valider les parcours Android/iOS.
 
 **Règle de vérité produit :** tant qu’aucun fournisseur n’est connecté, les prix restent explicitement fictifs et ne doivent jamais être présentés comme des offres disponibles ou réservables.
 
