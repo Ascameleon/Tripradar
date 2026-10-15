@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { searchFlights } from "./provider.mjs";
+import { searchFlights, searchHotels } from "./provider.mjs";
 
 test("rejects live searches when provider credentials are missing", async () => {
   const oldId = process.env.AMADEUS_CLIENT_ID;
@@ -83,7 +83,7 @@ test("searches hotel inventory and sorts verified offers by total price", async 
         ok: true,
         json: async () => ({
           data: [
-            { hotel: { hotelId: "H1", name: "Hotel Alpha", rating: "4" }, offers: [{ id: "O1", price: { total: "300.00", currency: "EUR" }, room: { typeEstimated: { category: "DOUBLE" } }] },
+            { hotel: { hotelId: "H1", name: "Hotel Alpha", rating: "4" }, offers: [{ id: "O1", price: { total: "300.00", currency: "EUR" }, room: { typeEstimated: { category: "DOUBLE" } } }] },
             { hotel: { hotelId: "H2", name: "Hotel Beta" }, offers: [{ id: "O2", price: { total: "180.00", currency: "EUR" }, room: { typeEstimated: { category: "SINGLE" } }] }
           ]
         })
