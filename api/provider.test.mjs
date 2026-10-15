@@ -61,3 +61,51 @@ test("normalizes and price-sorts flight offers from the provider", async () => {
     else process.env.AMADEUS_CLIENT_SECRET = oldSecret;
   }
 });
+
+
+test("searches hotel inventory and sorts verified offers by total price", async () => {
+  const oldId = process.env.AMADEUS_CLIENT_ID;
+  const oldSecret = process.env.AMADEUS_CLIENT_SECRET;
+  process.env.AMADEUS_CLIENT_ID = "test-client";
+  process.env.AMADEUS_CLIENT_SECRET = "test-secret";
+  const calls = [];
+  const fakeFetch = async (url) => {
+    const value = String(url);
+    calls.push(value);
+    if (value.includes("/v1/security/oauth2/token")) {
+      return { ok: true, json: async () => ({ access_token: "hotel-test-token", expires_in: 3600 }) };
+    }
+    if (value.includes("/v1/reference-data/locations/hotels/by-city")) {
+      return { ok: true, json: async () => ({ data: [{ hotelId: "H1" }, { hotelId: "H2" }] }) };
+    }
+    if (value.includes("/v3/shopping/hotel-offers")) {
+      return {
+        ok: true,
+        json: async () => ({
+          data: [
+            { hotel: { hotelId: "H1", name: "Hotel Alpha", rating: "4" }, offers: [{ id: "O1", price: { total: "300.00", currency: "EUR" }, room: { typeEstimated: { category: "DOUBLE" } }] },
+            { hotel: { hotelId: "H2", name: "Hotel Beta" }, offers: [{ id: "O2", price: { total: "180.00", currency: "EUR" }, room: { typeEstimated: { category: "SINGLE" } }] }
+          ]
+        })
+      };
+    }
+    throw new Error("Unexpected provider URL: " + value);
+  };
+  try {
+    const offers = await searchHotels({
+      cityCode: "IST", checkInDate: "2026-11-10", checkOutDate: "2026-11-14", adults: 2, currencyCode: "EUR"
+    }, fakeFetch);
+    assert.equal(offers.length, 2);
+    assert.equal(offers[0].name, "Hotel Beta");
+    assert.equal(offers[0].price, 180);
+    assert.equal(offers[0].checkInDate, "2026-11-10");
+    assert.equal(offers[0].checkOutDate, "2026-11-14");
+    assert.ok(calls.some((url) => url.includes("cityCode=IST")));
+    assert.ok(calls.some((url) => url.includes("hotelIds=H1%2CH2")));
+  } finally {
+    if (oldId === undefined) delete process.env.AMADEUS_CLIENT_ID;
+    else process.env.AMADEUS_CLIENT_ID = oldId;
+    if (oldSecret === undefined) delete process.env.AMADEUS_CLIENT_SECRET;
+    else process.env.AMADEUS_CLIENT_SECRET = oldSecret;
+  }
+});
