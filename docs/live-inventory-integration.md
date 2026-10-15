@@ -46,4 +46,4 @@ Do not commit real secrets. Add credentials only through the deployment platform
 
 ## Current limitation
 
-The server-side adapter and strict input validation are committed, with a basic in-memory rate limit. No supplier credentials or backend deployment are configured in this repository. Therefore live flight/hotel results cannot truthfully be enabled by a front-end-only change. The current external search links are a safe bridge while provider access is arranged.
+The server-side adapter now exposes flight and hotel search endpoints with strict input validation, JSON request checks, exact-origin CORS, timeouts, and a bounded in-memory rate limit. The UI calls both endpoints and falls back to external search without inventing prices. A partial estimate is shown only when both live offers exist in the same currency. No supplier credentials or backend deployment are configured in this repository, so production live inventory remains gated on deployment and approved provider access.
