@@ -26,3 +26,53 @@ export async function searchFlights(input, fetchImpl = fetch) {
     return { id: String(offer.id || ""), price: Number(offer.price?.grandTotal), currency: offer.price?.currency || input.currencyCode, origin: first?.departure?.iataCode || input.origin, destination: last?.arrival?.iataCode || input.destination, departureAt: first?.departure?.at || null, arrivalAt: last?.arrival?.at || null, stops: itineraries.map((itinerary) => Math.max(0, (itinerary.segments || []).length - 1)), validatingAirlineCodes: offer.validatingAirlineCodes || [], checkedAt: new Date().toISOString(), provider: "Amadeus" };
   }).filter((offer) => Number.isFinite(offer.price) && offer.price >= 0).sort((a, b) => a.price - b.price);
 }
+
+export async function searchHotels(input, fetchImpl = fetch) {
+  const token = await getToken(fetchImpl);
+  const headers = { authorization: \`Bearer \${token}\` };
+  const hotelParams = new URLSearchParams({ cityCode: input.cityCode, radius: "10", radiusUnit: "KM", hotelSource: "ALL" });
+  const hotelResponse = await fetchImpl(\`\${BASE}/v1/reference-data/locations/hotels/by-city?\${hotelParams}\`, {
+    headers, signal: AbortSignal.timeout(8000)
+  });
+  if (!hotelResponse.ok) {
+    const error = new Error("Hotel lookup failed");
+    error.status = hotelResponse.status;
+    throw error;
+  }
+  const hotelData = await hotelResponse.json();
+  const hotelIds = (hotelData.data || []).map((hotel) => hotel.hotelId).filter(Boolean).slice(0, 10);
+  if (!hotelIds.length) return [];
+  const offerParams = new URLSearchParams({
+    hotelIds: hotelIds.join(","),
+    checkInDate: input.checkInDate,
+    checkOutDate: input.checkOutDate,
+    adults: String(input.adults || 1),
+    roomQuantity: "1",
+    currency: input.currencyCode || "EUR"
+  });
+  const offersResponse = await fetchImpl(\`\${BASE}/v3/shopping/hotel-offers?\${offerParams}\`, {
+    headers, signal: AbortSignal.timeout(10000)
+  });
+  if (!offersResponse.ok) {
+    const error = new Error("Hotel offer search failed");
+    error.status = offersResponse.status;
+    throw error;
+  }
+  const payload = await offersResponse.json();
+  return (payload.data || []).flatMap((entry) => (entry.offers || []).map((offer) => ({
+    id: String(offer.id || ""),
+    hotelId: String(entry.hotel?.hotelId || ""),
+    name: String(entry.hotel?.name || "Hébergement"),
+    rating: entry.hotel?.rating ? String(entry.hotel.rating) : null,
+    checkInDate: offer.checkInDate || input.checkInDate,
+    checkOutDate: offer.checkOutDate || input.checkOutDate,
+    price: Number(offer.price?.total),
+    currency: offer.price?.currency || input.currencyCode || "EUR",
+    room: String(offer.room?.typeEstimated?.category || offer.room?.description?.text || "Chambre selon disponibilité"),
+    boardType: String(offer.boardType || "NON RENSEIGNÉ"),
+    checkedAt: new Date().toISOString(),
+    provider: "Amadeus"
+  })).filter((offer) => Number.isFinite(offer.price) && offer.price > 0))
+    .sort((a, b) => a.price - b.price)
+    .slice(0, 10);
+}
