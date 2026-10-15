@@ -23,7 +23,7 @@ test("rejects impossible dates and dates in the past", () => {
 
 test("rejects unsupported passenger counts and malformed currency codes", () => {
   assert.equal(validateSearch({ ...valid, adults: 0 }, today), null);
-  assert.equal(validateSearch({ ...valid, adults: null }, today), valid);
+  assert.deepEqual(validateSearch({ ...valid, adults: null }, today), valid);
   assert.equal(validateSearch({ ...valid, adults: 10 }, today), null);
   assert.equal(validateSearch({ ...valid, currencyCode: "EURO" }, today), null);
 });
