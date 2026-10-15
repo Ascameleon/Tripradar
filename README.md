@@ -23,12 +23,14 @@ Les prix et durées affichés sont **fictifs, à titre de démonstration**. Le p
 
 ## Prochaines étapes vers un produit fiable
 
-1. Choisir un fournisseur d'inventaire vols/hôtels offrant une API et vérifier ses conditions d'accès, sa couverture depuis l'Algérie et ses coûts.
-2. Ajouter un backend minimal pour agréger, normaliser et horodater les offres; ne jamais présenter une donnée expirée comme disponible.
-3. Ajouter les filtres de durée, bagages, escales, devise et coût total séjour.
-4. Valider l’installation PWA et le parcours hors ligne sur Android et iOS.
-4. Ajouter l'hébergement après le classement initial des vols, puis le coût total et la détection des variations.
-5. Automatiser les tests fonctionnels, l'accessibilité et les tests mobile avant le lancement.
+1. **Données réelles (bloquant pour le lancement public) :** choisir un fournisseur de vols et d’hôtels avec API, vérifier la couverture depuis l’Algérie, les conditions d’accès, les coûts et les droits d’affichage.
+2. Ajouter un backend minimal pour agréger, normaliser et horodater les offres; afficher la devise, l’heure de vérification et l’état de disponibilité.
+3. Intégrer les hébergements au classement, puis calculer un coût total comparable (vol + nuits + frais connus) sans additionner des prix incompatibles.
+4. Ajouter les filtres de durée, bagages, escales, devise, nombre de voyageurs et coût total du séjour.
+5. Tester l’installation PWA, le mode hors ligne, l’accessibilité et les parcours mobiles Android/iOS.
+6. Automatiser les tests fonctionnels et de non-régression avant le lancement.
+
+**Règle de vérité produit :** tant qu’aucun fournisseur n’est connecté, les prix restent explicitement fictifs et ne doivent jamais être présentés comme des offres disponibles ou réservables.
 
 ## Règle produit
 
