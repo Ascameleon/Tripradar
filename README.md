@@ -13,6 +13,20 @@
 - Manifest PWA, icône dédiée et cache du shell pour ouvrir l’application hors ligne après la première visite.
 - Interface responsive mobile/desktop, sans dépendance ni build.
 
+## API de recherche de vols (intégration initiale)
+
+Une API Node.js sans dépendances est disponible dans `api/`. Elle utilise l'API Amadeus côté serveur : les secrets ne sont jamais placés dans le navigateur.
+
+1. Installer Node.js 20 ou plus récent.
+2. Copier `.env.example` vers `.env` et renseigner `AMADEUS_CLIENT_ID` et `AMADEUS_CLIENT_SECRET` depuis votre compte fournisseur. Ne jamais committer `.env`.
+3. Charger les variables d'environnement dans le terminal, puis lancer `node api/server.mjs`.
+4. Vérifier `GET /api/health`, puis envoyer un `POST /api/flights/search` avec `origin`, `destination` (codes IATA à 3 lettres), `departureDate` (AAAA-MM-JJ), `adults` et `currencyCode`.
+5. Utiliser l'environnement de test jusqu'à validation du compte et de l'accès production.
+
+Tests locaux : `node --test tests/*.mjs api/*.test.mjs`.
+
+**Important :** la recherche live côté serveur est amorcée, mais n'est pas encore reliée au formulaire de l'interface, car celui-ci accepte actuellement des noms de villes libres et ne dispose d'aucun identifiant fournisseur. Il faut aussi configurer des identifiants valides avant qu'une recherche live puisse répondre. Les prix du catalogue affiché restent fictifs.
+
 ## Lancer
 
 Ouvrir `index.html` dans un navigateur moderne. Pour installer l’application et activer le mode hors ligne, la servir en HTTPS (par exemple via GitHub Pages) puis utiliser « Ajouter à l’écran d’accueil » dans le navigateur. Le service worker n’est pas disponible en ouverture `file://`.
