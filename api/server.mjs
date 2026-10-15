@@ -45,7 +45,7 @@ const server = http.createServer(async (req, res) => {
     return res.end();
   }
 
-  const url = new URL(req.url || "/", \`http://\${req.headers.host || "localhost"}\`);
+  const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
   if (url.pathname === "/api/health" && req.method === "GET") {
     return json(res, 200, {
       ok: true,
@@ -98,4 +98,4 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(port, "0.0.0.0", () => console.log(\`TripRadar API listening on \${port}\`));
+server.listen(port, "0.0.0.0", () => console.log(`TripRadar API listening on ${port}`));
