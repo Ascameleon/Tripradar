@@ -10,7 +10,9 @@ const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
 
 
 test("inline application JavaScript parses without syntax errors", () => {
-  const script = html.match(/<script>([\\s\\S]*?)<\\/script>/)?.[1];
+  const start = html.indexOf("<script>") + "<script>".length;
+  const end = html.indexOf("</script>", start);
+  const script = html.slice(start, end);
   assert.ok(script, "inline application script must exist");
   assert.doesNotThrow(() => new vm.Script(script));
 });
