@@ -8,12 +8,14 @@
 - Destinations de démonstration triées du prix le plus bas au plus élevé.
 - Favoris persistants dans le navigateur.
 - Vérification basique de cohérence des dates.
-- Liens de sortie vers une recherche externe pour continuer la comparaison.
+- Filtre texte et tri par prix croissant/décroissant ou nom.
+- Liens de sortie vers Google Flights et une recherche d’hébergements Booking.com.
+- Manifest PWA, icône dédiée et cache du shell pour ouvrir l’application hors ligne après la première visite.
 - Interface responsive mobile/desktop, sans dépendance ni build.
 
 ## Lancer
 
-Ouvrir `index.html` dans un navigateur moderne ou activer GitHub Pages sur la branche `main` avec la racine comme dossier de publication.
+Ouvrir `index.html` dans un navigateur moderne. Pour installer l’application et activer le mode hors ligne, la servir en HTTPS (par exemple via GitHub Pages) puis utiliser « Ajouter à l’écran d’accueil » dans le navigateur. Le service worker n’est pas disponible en ouverture `file://`.
 
 ## Limites connues — transparence
 
@@ -24,6 +26,7 @@ Les prix et durées affichés sont **fictifs, à titre de démonstration**. Le p
 1. Choisir un fournisseur d'inventaire vols/hôtels offrant une API et vérifier ses conditions d'accès, sa couverture depuis l'Algérie et ses coûts.
 2. Ajouter un backend minimal pour agréger, normaliser et horodater les offres; ne jamais présenter une donnée expirée comme disponible.
 3. Ajouter les filtres de durée, bagages, escales, devise et coût total séjour.
+4. Valider l’installation PWA et le parcours hors ligne sur Android et iOS.
 4. Ajouter l'hébergement après le classement initial des vols, puis le coût total et la détection des variations.
 5. Automatiser les tests fonctionnels, l'accessibilité et les tests mobile avant le lancement.
 
