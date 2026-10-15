@@ -1,8 +1,9 @@
 export function validateSearch(input, now = new Date()) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return null;
   const origin = String(input.origin || "").trim().toUpperCase();
   const destination = String(input.destination || "").trim().toUpperCase();
   const departureDate = String(input.departureDate || "");
-  const adults = Number(input.adults || 1);
+  const adults = Number(input.adults ?? 1);
   const currencyCode = String(input.currencyCode || "EUR").toUpperCase();
   const isoDate = /^\d{4}-\d{2}-\d{2}$/;
   const parsedDate = new Date(`${departureDate}T00:00:00Z`);
@@ -12,6 +13,7 @@ export function validateSearch(input, now = new Date()) {
 }
 
 export function validateHotelSearch(input, now = new Date()) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return null;
   const cityCode = String(input.cityCode || "").trim().toUpperCase();
   const checkInDate = String(input.checkInDate || "");
   const checkOutDate = String(input.checkOutDate || "");
