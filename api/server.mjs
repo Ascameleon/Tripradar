@@ -19,7 +19,7 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
   if (url.pathname === "/api/health" && req.method === "GET") return json(res, 200, { ok: true, providerConfigured: Boolean(process.env.AMADEUS_CLIENT_ID && process.env.AMADEUS_CLIENT_SECRET) });
   if (url.pathname !== "/api/flights/search" || req.method !== "POST") return json(res, 404, { error: "not_found" });
-  const ip = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown").split(",")[0].trim();
+  const ip = String(req.socket.remoteAddress || "unknown");
   if (rateLimited(ip)) return json(res, 429, { error: "rate_limited", message: "Trop de recherches. Réessayez dans une minute." });
   let body = "";
   for await (const chunk of req) { body += chunk; if (body.length > 20_000) return json(res, 413, { error: "request_too_large" }); }
