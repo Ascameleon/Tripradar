@@ -20,11 +20,12 @@ Une API Node.js sans dépendances est disponible dans `api/`. Elle utilise l'API
 
 1. Installer Node.js 20 ou plus récent.
 2. Copier `.env.example` vers `.env` et renseigner `AMADEUS_CLIENT_ID` et `AMADEUS_CLIENT_SECRET` depuis votre compte fournisseur. Ne jamais committer `.env`.
-3. Charger les variables d'environnement dans le terminal, puis lancer `node api/server.mjs`.
-4. Vérifier `GET /api/health`, puis envoyer un `POST /api/flights/search` avec `origin`, `destination` (codes IATA à 3 lettres), `departureDate` (AAAA-MM-JJ), `adults` et `currencyCode`.
-5. Utiliser l'environnement de test jusqu'à validation du compte et de l'accès production.
+3. Définir `ALLOWED_ORIGIN` sur l’origine exacte de l’interface en production; l’API rejette les autres origines navigateur.
+4. Charger les variables d'environnement dans le terminal, puis lancer `node api/server.mjs`.
+5. Vérifier `GET /api/health`, puis envoyer un `POST /api/flights/search` avec `origin`, `destination` (codes IATA à 3 lettres), `departureDate` (AAAA-MM-JJ), `adults` et `currencyCode`.
+6. Utiliser l'environnement de test jusqu'à validation du compte et de l'accès production.
 
-Tests locaux : `node --test tests/*.mjs api/*.test.mjs`.
+Tests locaux : `node --test tests/*.mjs api/*.test.mjs`. Les tests couvrent les validations, le rendu du fournisseur et le tri des offres; la CI GitHub Actions exécute cette suite à chaque push sur `main`.
 
 **Intégration interface :** les boutons « Vols » tentent maintenant une recherche live via `/api/health` puis `/api/flights/search`. Les départs reconnus incluent Alger (ALG), Oran (ORN), Constantine (CZL) et Annaba (AAE), ainsi que les codes IATA saisis directement. Le navigateur peut recevoir une URL d’API distincte via `window.TRIPRADAR_API_BASE` défini avant le script de l’application. Si l’interface et l’API sont sur des domaines différents, définir `ALLOWED_ORIGIN` côté serveur sur l’origine exacte de l’interface (HTTPS), sans joker. Si l’API ou les identifiants Amadeus sont indisponibles, l’interface n’invente aucun tarif et propose Google Flights comme solution externe. L’intégration actuelle porte sur les vols aller uniquement; les hôtels ne sont pas connectés à une API.
 
