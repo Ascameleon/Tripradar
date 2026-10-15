@@ -67,6 +67,13 @@ test("favorites persist locally and recover safely if storage is unavailable", (
   assert.match(html, /try\{favorites=new Set\(JSON\.parse\(localStorage\.getItem/);
 });
 
+test("API applies bounded request, header, and keep-alive timeouts", async () => {
+  const server = await readFile(new URL("../api/server.mjs", import.meta.url), "utf8");
+  assert.match(server, /server\.headersTimeout\s*=\s*10_000/);
+  assert.match(server, /server\.requestTimeout\s*=\s*15_000/);
+  assert.match(server, /server\.keepAliveTimeout\s*=\s*5_000/);
+});
+
 test("PWA metadata and offline shell are present", () => {
   assert.equal(manifest.short_name, "TripRadar");
   assert.equal(manifest.display, "standalone");
