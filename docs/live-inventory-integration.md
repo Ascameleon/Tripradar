@@ -23,7 +23,7 @@ Official documentation:
 4. Normalize each offer into: provider, offer ID, origin/destination, segments, departure/arrival times with time zones, total price, currency, baggage, stops, provider deeplink, checked-at timestamp, and expiry if supplied.
 5. Sort by comparable total price; never combine different currencies without a dated exchange-rate source.
 6. Revalidate an offer with the supplier before redirecting to a booking flow. Search results are not a booking guarantee.
-7. Apply request-size limits, per-client rate limits, strict timeouts, and an exact allowed-origin setting. Trust forwarded IP headers only behind a trusted proxy.\n8. If a supplier fails or returns no offers, show a clear unavailable state; never silently fall back to invented prices.
+7. Apply request-size limits, JSON content-type enforcement, per-client rate limits, strict timeouts, and an exact allowed-origin setting. Reject requests from disallowed browser origins and avoid returning upstream errors or credentials. Trust forwarded IP headers only behind a trusted proxy.\n8. If a supplier fails or returns no offers, show a clear unavailable state; never silently fall back to invented prices.
 
 ## Required configuration (server only)
 
