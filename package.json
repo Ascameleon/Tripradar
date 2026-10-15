@@ -1,0 +1,14 @@
+{
+  "name": "tripradar",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "TripRadar lightweight travel comparison PWA and optional Amadeus API",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node api/server.mjs",
+    "test": "node --test tests/*.mjs api/*.test.mjs"
+  }
+}
