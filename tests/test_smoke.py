@@ -53,6 +53,13 @@ class TripRadarSmokeTests(unittest.TestCase):
         self.assertIn('url.searchParams.set("ss",d.city)', HTML)
         self.assertIn('https://www.booking.com/searchresults.html', HTML)
 
+    def test_installable_offline_app_files_are_wired(self):
+        self.assertIn('rel="manifest" href="./manifest.webmanifest"', HTML)
+        self.assertIn('navigator.serviceWorker.register("./sw.js")', HTML)
+        self.assertTrue((ROOT / "manifest.webmanifest").is_file())
+        self.assertTrue((ROOT / "sw.js").is_file())
+        self.assertTrue((ROOT / "icon.svg").is_file())
+
     def test_no_inline_event_attributes(self):
         self.assertNotRegex(HTML, r'\son(?:click|submit|change)\s*=')
 
