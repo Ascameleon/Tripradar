@@ -26,7 +26,7 @@ Une API Node.js sans dépendances est disponible dans `api/`. Elle utilise l'API
 
 Tests locaux : `node --test tests/*.mjs api/*.test.mjs`.
 
-**Intégration interface :** les boutons « Vols » tentent maintenant une recherche live via `/api/health` puis `/api/flights/search`. Les départs reconnus incluent Alger (ALG), Oran (ORN), Constantine (CZL) et Annaba (AAE), ainsi que les codes IATA saisis directement. Le navigateur peut recevoir une URL d’API distincte via `window.TRIPRADAR_API_BASE` défini avant le script de l’application. Si l’API ou les identifiants Amadeus sont indisponibles, l’interface n’invente aucun tarif et propose Google Flights comme solution externe. L’intégration actuelle porte sur les vols aller uniquement; les hôtels ne sont pas connectés à une API.
+**Intégration interface :** les boutons « Vols » tentent maintenant une recherche live via `/api/health` puis `/api/flights/search`. Les départs reconnus incluent Alger (ALG), Oran (ORN), Constantine (CZL) et Annaba (AAE), ainsi que les codes IATA saisis directement. Le navigateur peut recevoir une URL d’API distincte via `window.TRIPRADAR_API_BASE` défini avant le script de l’application. Si l’interface et l’API sont sur des domaines différents, définir `ALLOWED_ORIGIN` côté serveur sur l’origine exacte de l’interface (HTTPS), sans joker. Si l’API ou les identifiants Amadeus sont indisponibles, l’interface n’invente aucun tarif et propose Google Flights comme solution externe. L’intégration actuelle porte sur les vols aller uniquement; les hôtels ne sont pas connectés à une API.
 
 ## Lancer
 
