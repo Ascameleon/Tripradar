@@ -70,10 +70,10 @@ async function searchFlightsForDestination(destination){
  showLivePanel("Recherche des tarifs en cours…","Connexion au fournisseur");
  const apiBase=(window.TRIPRADAR_API_BASE||location.origin).replace(/\/$/,"");
  try{
-  const health=await fetch(apiBase+"/api/health",{headers:{accept:"application/json"}});
+  const health=await fetch(apiBase+"/api/health",{headers:{accept:"application/json"},signal:AbortSignal.timeout(12000)});
   if(!health.ok)throw new Error("api_unavailable");
   const status=await health.json();if(!status.providerConfigured)throw new Error("provider_not_configured");
-  const response=await fetch(apiBase+"/api/flights/search",{method:"POST",headers:{"content-type":"application/json",accept:"application/json"},body:JSON.stringify({origin,destination:destinationCode,departureDate:date,adults:1,currencyCode:"EUR"})});
+  const response=await fetch(apiBase+"/api/flights/search",{method:"POST",headers:{"content-type":"application/json",accept:"application/json"},body:JSON.stringify({origin,destination:destinationCode,departureDate:date,adults:1,currencyCode:"EUR"}),signal:AbortSignal.timeout(14000)});
   const payload=await response.json();if(!response.ok)throw new Error(payload.message||"search_failed");
   const offers=Array.isArray(payload.offers)?payload.offers:[];
   $("liveSource").textContent="Amadeus · vérifié le "+new Date(payload.checkedAt||Date.now()).toLocaleString("fr-FR");
