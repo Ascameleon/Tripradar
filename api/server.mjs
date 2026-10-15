@@ -1,6 +1,6 @@
 import http from "node:http";
-import { searchFlights } from "./provider.mjs";
-import { validateSearch } from "./validation.mjs";
+import { searchFlights, searchHotels } from "./provider.mjs";
+import { validateSearch, validateHotelSearch } from "./validation.mjs";
 
 const port = Number(process.env.PORT || 3000);
 const allowedOrigin = process.env.ALLOWED_ORIGIN || "http://localhost:3000";
@@ -58,7 +58,9 @@ const server = http.createServer(async (req, res) => {
       providerConfigured: Boolean(process.env.AMADEUS_CLIENT_ID && process.env.AMADEUS_CLIENT_SECRET)
     }, origin);
   }
-  if (url.pathname !== "/api/flights/search" || req.method !== "POST") {
+  const isFlightSearch = url.pathname === "/api/flights/search";
+  const isHotelSearch = url.pathname === "/api/hotels/search";
+  if ((!isFlightSearch && !isHotelSearch) || req.method !== "POST") {
     return json(res, 404, { error: "not_found" }, origin);
   }
 
@@ -89,11 +91,11 @@ const server = http.createServer(async (req, res) => {
     return json(res, 400, { error: "invalid_json" }, origin);
   }
 
-  const search = validateSearch(input);
+  const search = isFlightSearch ? validateSearch(input) : validateHotelSearch(input);
   if (!search) return json(res, 400, { error: "invalid_search_parameters" }, origin);
 
   try {
-    const offers = await searchFlights(search);
+    const offers = isFlightSearch ? await searchFlights(search) : await searchHotels(search);
     return json(res, 200, { source: "Amadeus", checkedAt: new Date().toISOString(), offers }, origin);
   } catch (error) {
     const status = error?.status === 429 || error?.status === 503 ? 503 : 502;
