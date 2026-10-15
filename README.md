@@ -10,11 +10,11 @@
 - Vérification basique de cohérence des dates.
 - Filtre texte et tri par prix croissant/décroissant ou nom.
 - Recherche live optionnelle sur les cartes de vols si l’API Amadeus est configurée; bascule explicite vers Google Flights sinon.
-- Liens vers les recherches d’hébergements Booking.com (sans tarifs hôteliers intégrés).
+- Recherche live optionnelle des hôtels via l’API Amadeus, avec repli Booking.com si indisponible.
 - Manifest PWA, icône dédiée et cache du shell pour ouvrir l’application hors ligne après la première visite.
 - Interface responsive mobile/desktop, sans dépendance ni build.
 
-## API de recherche de vols (intégration initiale)
+## API de recherche vols et hôtels
 
 Une API Node.js sans dépendances est disponible dans `api/`. Elle utilise l'API Amadeus côté serveur : les secrets ne sont jamais placés dans le navigateur.
 
@@ -22,12 +22,12 @@ Une API Node.js sans dépendances est disponible dans `api/`. Elle utilise l'API
 2. Copier `.env.example` vers `.env` et renseigner `AMADEUS_CLIENT_ID` et `AMADEUS_CLIENT_SECRET` depuis votre compte fournisseur. Ne jamais committer `.env`.
 3. Définir `ALLOWED_ORIGIN` sur l’origine exacte de l’interface en production; l’API rejette les autres origines navigateur.
 4. Charger les variables d'environnement dans le terminal, puis lancer `node api/server.mjs`.
-5. Vérifier `GET /api/health`, puis envoyer un `POST /api/flights/search` avec `origin`, `destination` (codes IATA à 3 lettres), `departureDate` (AAAA-MM-JJ), `adults` et `currencyCode`.
+5. Vérifier `GET /api/health`, puis tester `POST /api/flights/search` (`origin`, `destination`, `departureDate`, `adults`, `currencyCode`) et `POST /api/hotels/search` (`cityCode`, `checkInDate`, `checkOutDate`, `adults`, `currencyCode`).
 6. Utiliser l'environnement de test jusqu'à validation du compte et de l'accès production.
 
-Tests locaux : `node --test tests/*.mjs api/*.test.mjs`. Les tests couvrent les validations, le rendu du fournisseur et le tri des offres; la CI GitHub Actions exécute cette suite à chaque push sur `main`.
+Tests locaux : `node --test tests/*.mjs api/*.test.mjs`. Les tests couvrent les validations vols/hôtels, la normalisation des offres et leur tri par prix; la CI GitHub Actions exécute cette suite à chaque push sur `main`.
 
-**Intégration interface :** les boutons « Vols » tentent maintenant une recherche live via `/api/health` puis `/api/flights/search`. Les départs reconnus incluent Alger (ALG), Oran (ORN), Constantine (CZL) et Annaba (AAE), ainsi que les codes IATA saisis directement. Pour une API hébergée sur un autre domaine, renseigner son URL dans `config.js` (`window.TRIPRADAR_API_BASE`) avant déploiement. Définir aussi `ALLOWED_ORIGIN` côté serveur sur l’origine exacte de l’interface en HTTPS. Si l’interface et l’API sont sur des domaines différents, définir `ALLOWED_ORIGIN` côté serveur sur l’origine exacte de l’interface (HTTPS), sans joker. Si l’API ou les identifiants Amadeus sont indisponibles, l’interface n’invente aucun tarif et propose Google Flights comme solution externe. L’intégration actuelle porte sur les vols aller uniquement; les hôtels ne sont pas connectés à une API.
+**Intégration interface :** les boutons « Vols » tentent maintenant une recherche live via `/api/health` puis `/api/flights/search`. Les départs reconnus incluent Alger (ALG), Oran (ORN), Constantine (CZL) et Annaba (AAE), ainsi que les codes IATA saisis directement. Pour une API hébergée sur un autre domaine, renseigner son URL dans `config.js` (`window.TRIPRADAR_API_BASE`) avant déploiement. Définir `ALLOWED_ORIGIN` côté serveur sur l’origine exacte de l’interface en HTTPS, sans joker. Si l’API ou les identifiants Amadeus sont indisponibles, l’interface n’invente aucun tarif et propose une recherche externe. La recherche de vols porte sur l’aller; les hôtels peuvent renvoyer des offres pour les dates du séjour lorsque l’accès fournisseur le permet.
 
 ## Lancer
 
@@ -35,13 +35,12 @@ Ouvrir `index.html` dans un navigateur moderne. Pour installer l’application e
 
 ## Limites connues — transparence
 
-Les prix et durées affichés sont **fictifs, à titre de démonstration**. Seule la recherche aller peut afficher des tarifs live, et uniquement quand l’API Amadeus est correctement configurée et accessible. Le catalogue de destinations, ses prix d’exemple et les hôtels ne sont pas connectés à des tarifs en temps réel. Le prototype ne réserve rien. Les liens externes constituent une passerelle de recherche, pas une intégration de données certifiée. Les dates saisies servent à la validation de formulaire; le lien fournisseur devra être complété avec un itinéraire et des dates vérifiés avant lancement public.
+Les prix et durées du catalogue de destinations sont **fictifs, à titre de démonstration**. Les vols et hôtels peuvent afficher des offres live uniquement quand l’API Amadeus est correctement configurée, accessible et autorisée à fournir l’inventaire demandé. Les offres ne garantissent pas la disponibilité au moment de la réservation. Le prototype ne réserve rien et ne calcule pas encore un coût total vol + hôtel.
 
 ## Prochaines étapes vers un produit fiable
 
-1. **Données réelles (bloquant pour le lancement public) :** choisir un fournisseur de vols et d’hôtels avec API, vérifier la couverture depuis l’Algérie, les conditions d’accès, les coûts et les droits d’affichage.
-2. Ajouter un backend minimal pour agréger, normaliser et horodater les offres; afficher la devise, l’heure de vérification et l’état de disponibilité.
-3. Intégrer les hébergements au classement, puis calculer un coût total comparable (vol + nuits + frais connus) sans additionner des prix incompatibles.
+1. **Bloquant pour le lancement public :** configurer des identifiants fournisseur actifs, déployer l’API et vérifier la couverture réelle depuis l’Algérie, les conditions d’accès et les droits d’affichage.
+2. Calculer un coût total comparable (vol aller + hébergement pour le nombre de nuits + frais connus) en gardant les devises et périodes compatibles.
 4. Ajouter les filtres de durée, bagages, escales, devise, nombre de voyageurs et coût total du séjour.
 5. Tester l’installation PWA, le mode hors ligne, l’accessibilité et les parcours mobiles Android/iOS.
 6. Automatiser les tests fonctionnels et de non-régression avant le lancement.
