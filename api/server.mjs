@@ -15,6 +15,7 @@ function rateLimited(ip) {
     }
   }
   const bucket = requestBuckets.get(ip);
+  if (!bucket && requestBuckets.size >= 5_000) return true;
   if (!bucket || now - bucket.start >= 60_000) {
     requestBuckets.set(ip, { start: now, count: 1 });
     return false;
