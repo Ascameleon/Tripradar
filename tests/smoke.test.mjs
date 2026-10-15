@@ -56,8 +56,10 @@ test("flight cards attempt live API search and clearly fall back without inventi
   assert.match(readme, /window\.TRIPRADAR_API_BASE/);
 });
 
-test("external provider links open with reverse-tabnabbing protections", () => {
-  assert.match(html, /window\.open\([^;]*"_blank","noopener,noreferrer"\)/);
+test("external fallback links use safe new-tab attributes", () => {
+  assert.match(html, /a\.target="_blank"/);
+  assert.match(html, /a\.rel="noopener noreferrer"/);
+  assert.match(html, /booking\.com\/searchresults\.html/);
 });
 
 test("favorites persist locally and recover safely if storage is unavailable", () => {
