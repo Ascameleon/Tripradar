@@ -17,7 +17,7 @@ export function validateHotelSearch(input, now = new Date()) {
   const cityCode = String(input.cityCode || "").trim().toUpperCase();
   const checkInDate = String(input.checkInDate || "");
   const checkOutDate = String(input.checkOutDate || "");
-  const adults = Number(input.adults || 1);
+  const adults = Number(input.adults ?? 1);
   const currencyCode = String(input.currencyCode || "EUR").toUpperCase();
   const isoDate = /^\d{4}-\d{2}-\d{2}$/;
   const parseDate = (value) => {
