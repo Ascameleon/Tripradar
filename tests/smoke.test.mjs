@@ -64,4 +64,7 @@ test("PWA metadata and offline shell are present", () => {
   assert.equal(manifest.display, "standalone");
   assert.match(worker, /addAll\(APP_FILES\)/);
   assert.match(html, /serviceWorker\.register/);
+  assert.ok(html.includes('<script src="./config.js"></script>'));
+  assert.ok(worker.includes('"./config.js"'));
+  assert.ok(config.includes("TRIPRADAR_API_BASE"));
 });
