@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { validateSearch } from "./validation.mjs";
+import { validateSearch, validateHotelSearch } from "./validation.mjs";
 
 const today = new Date("2026-10-15T12:00:00Z");
 const valid = { origin: "ALG", destination: "CDG", departureDate: "2026-11-10", adults: 1, currencyCode: "EUR" };
@@ -23,4 +23,21 @@ test("rejects unsupported passenger counts and malformed currency codes", () => 
   assert.equal(validateSearch({ ...valid, adults: 0 }, today), null);
   assert.equal(validateSearch({ ...valid, adults: 10 }, today), null);
   assert.equal(validateSearch({ ...valid, currencyCode: "EURO" }, today), null);
+});
+
+test("accepts a valid hotel search and normalizes city and currency", () => {
+  assert.deepEqual(validateHotelSearch({
+    cityCode: "ist", checkInDate: "2026-11-10", checkOutDate: "2026-11-14", adults: 2, currencyCode: "eur"
+  }, today), {
+    cityCode: "IST", checkInDate: "2026-11-10", checkOutDate: "2026-11-14", adults: 2, currencyCode: "EUR"
+  });
+});
+
+test("rejects invalid hotel dates, city codes, guests, and currency", () => {
+  const hotel = { cityCode: "IST", checkInDate: "2026-11-10", checkOutDate: "2026-11-14", adults: 2, currencyCode: "EUR" };
+  assert.equal(validateHotelSearch({ ...hotel, checkOutDate: hotel.checkInDate }, today), null);
+  assert.equal(validateHotelSearch({ ...hotel, checkInDate: "2026-02-30" }, today), null);
+  assert.equal(validateHotelSearch({ ...hotel, cityCode: "Istanbul" }, today), null);
+  assert.equal(validateHotelSearch({ ...hotel, adults: 10 }, today), null);
+  assert.equal(validateHotelSearch({ ...hotel, currencyCode: "EURO" }, today), null);
 });
