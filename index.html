@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0b132b"><meta name="description" content="TripRadar compare les idées de voyage selon votre budget, vos dates flexibles et vos envies.">
+<meta name="theme-color" content="#0b132b"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.svg" type="image/svg+xml"><meta name="description" content="TripRadar compare les idées de voyage selon votre budget, vos dates flexibles et vos envies.">
 <title>TripRadar — Le voyage au meilleur prix</title>
 <style>
 :root{--navy:#0b132b;--blue:#2563eb;--cyan:#5eead4;--ink:#18233b;--muted:#68748a;--line:#e5eaf2;--bg:#f5f7fb;--white:#fff;--radius:22px;--shadow:0 14px 45px #10204412}
@@ -68,4 +68,5 @@ $("destinationFilter").addEventListener("input",render);$("sortBy").addEventList
 $("langBtn").addEventListener("click",()=>toast("Le prototype est actuellement en français. Les versions arabe et anglaise sont prévues."));
 const today=new Date();const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");$("dateFrom").min=iso(today);const ret=new Date(today);ret.setDate(ret.getDate()+1);$("dateTo").min=iso(ret);$("dateFrom").addEventListener("change",()=>{if($("dateFrom").value){const minReturn=new Date($("dateFrom").value+"T12:00:00");minReturn.setDate(minReturn.getDate()+1);$("dateTo").min=iso(minReturn);if($("dateTo").value&&$("dateTo").value<iso(minReturn))$("dateTo").value=iso(minReturn)}else $("dateTo").min=iso(ret)});
 render();
+if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) { window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {})); }
 </script></body></html>
