@@ -41,7 +41,7 @@ class TripRadarSmokeTests(unittest.TestCase):
         self.assertIn("Prix de démonstration", HTML)
 
     def test_destination_data_is_sorted_by_price(self):
-        self.assertIn('sort=(a,b)=>sort==="price-desc"?b.price-a.price:sort==="name"?a.city.localeCompare(b.city,"fr"):a.price-b.price', HTML)
+        self.assertIn('list.sort((a,b)=>sort==="price-desc"?b.price-a.price:sort==="name"?a.city.localeCompare(b.city,"fr"):a.price-b.price)', HTML)
         prices = [int(x) for x in re.findall(r'country:"[^"]+",price:(\d+)', HTML)]
         self.assertGreaterEqual(len(prices), 5)
         self.assertEqual(prices, sorted(prices))
