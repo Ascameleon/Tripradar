@@ -9,6 +9,11 @@ const requestBuckets = new Map();
 
 function rateLimited(ip) {
   const now = Date.now();
+  if (requestBuckets.size > 2_000) {
+    for (const [key, entry] of requestBuckets) {
+      if (now - entry.start >= 60_000) requestBuckets.delete(key);
+    }
+  }
   const bucket = requestBuckets.get(ip);
   if (!bucket || now - bucket.start >= 60_000) {
     requestBuckets.set(ip, { start: now, count: 1 });
@@ -90,9 +95,9 @@ const server = http.createServer(async (req, res) => {
     const offers = await searchFlights(search);
     return json(res, 200, { source: "Amadeus", checkedAt: new Date().toISOString(), offers }, origin);
   } catch (error) {
-    const status = error?.status === 429 ? 503 : error?.status === 503 ? 503 : 502;
+    const status = error?.status === 429 || error?.status === 503 ? 503 : 502;
     return json(res, status, {
-      error: status === 503 ? "provider_unavailable" : "provider_unavailable",
+      error: "provider_unavailable",
       message: "Aucune offre vérifiée disponible pour le moment."
     }, origin);
   }
