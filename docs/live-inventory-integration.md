@@ -23,7 +23,7 @@ Official documentation:
 4. Normalize each offer into: provider, offer ID, origin/destination, segments, departure/arrival times with time zones, total price, currency, baggage, stops, provider deeplink, checked-at timestamp, and expiry if supplied.
 5. Sort by comparable total price; never combine different currencies without a dated exchange-rate source.
 6. Revalidate an offer with the supplier before redirecting to a booking flow. Search results are not a booking guarantee.
-7. If a supplier fails or returns no offers, show a clear unavailable state; never silently fall back to invented prices.
+7. Apply request-size limits, per-client rate limits, strict timeouts, and an exact allowed-origin setting. Trust forwarded IP headers only behind a trusted proxy.\n8. If a supplier fails or returns no offers, show a clear unavailable state; never silently fall back to invented prices.
 
 ## Required configuration (server only)
 
@@ -46,4 +46,4 @@ Do not commit real secrets. Add credentials only through the deployment platform
 
 ## Current limitation
 
-No supplier credentials or backend deployment are configured in this repository. Therefore live flight/hotel results cannot truthfully be enabled by a front-end-only change. The current external search links are a safe bridge while provider access is arranged.
+The server-side adapter and strict input validation are committed, with a basic in-memory rate limit. No supplier credentials or backend deployment are configured in this repository. Therefore live flight/hotel results cannot truthfully be enabled by a front-end-only change. The current external search links are a safe bridge while provider access is arranged.
