@@ -37,7 +37,7 @@ test("the result summary follows the selected sort mode", () => {
 test("demo fares are never represented as verified live prices", () => {
   assert.match(html, /prix affichés sont des exemples de démonstration/);
   assert.match(html, /Aperçu de démonstration/);
-  assert.match(readme, /Seule la recherche aller peut afficher des tarifs live/);
+  assert.match(readme, /Les prix et durées du catalogue de destinations sont/);
 });
 
 
@@ -45,6 +45,9 @@ test("flight cards attempt live API search and clearly fall back without inventi
   assert.match(html, /id="livePanel"/);
   assert.match(html, /\/api\/health/);
   assert.match(html, /\/api\/flights\/search/);
+  assert.match(html, /\/api\/hotels\/search/);
+  assert.match(html, /Résultats d’hébergements/);
+  assert.match(readme, /POST `\/api\/hotels\/search`/);
   assert.match(html, /Aucun prix fictif n’est affiché/);
   assert.match(html, /Comparer les vols sur Google Flights/);
   assert.match(readme, /window\.TRIPRADAR_API_BASE/);
