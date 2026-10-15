@@ -29,9 +29,9 @@ export async function searchFlights(input, fetchImpl = fetch) {
 
 export async function searchHotels(input, fetchImpl = fetch) {
   const token = await getToken(fetchImpl);
-  const headers = { authorization: \`Bearer \${token}\` };
+  const headers = { authorization: `Bearer ${token}` };
   const hotelParams = new URLSearchParams({ cityCode: input.cityCode, radius: "10", radiusUnit: "KM", hotelSource: "ALL" });
-  const hotelResponse = await fetchImpl(\`\${BASE}/v1/reference-data/locations/hotels/by-city?\${hotelParams}\`, {
+  const hotelResponse = await fetchImpl(`${BASE}/v1/reference-data/locations/hotels/by-city?${hotelParams}`, {
     headers, signal: AbortSignal.timeout(8000)
   });
   if (!hotelResponse.ok) {
@@ -50,7 +50,7 @@ export async function searchHotels(input, fetchImpl = fetch) {
     roomQuantity: "1",
     currency: input.currencyCode || "EUR"
   });
-  const offersResponse = await fetchImpl(\`\${BASE}/v3/shopping/hotel-offers?\${offerParams}\`, {
+  const offersResponse = await fetchImpl(`${BASE}/v3/shopping/hotel-offers?${offerParams}`, {
     headers, signal: AbortSignal.timeout(10000)
   });
   if (!offersResponse.ok) {
