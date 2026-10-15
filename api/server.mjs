@@ -78,8 +78,7 @@ const server = http.createServer(async (req, res) => {
   for await (const chunk of req) {
     body += chunk;
     if (Buffer.byteLength(body, "utf8") > maxBodyBytes) {
-      res.writeHead(413, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
-      res.end(JSON.stringify({ error: "request_too_large" }));
+      json(res, 413, { error: "request_too_large" }, origin);
       return;
     }
   }
