@@ -35,15 +35,15 @@ Ouvrir `index.html` dans un navigateur moderne. Pour installer l’application e
 
 ## Limites connues — transparence
 
-Les prix et durées du catalogue de destinations sont **fictifs, à titre de démonstration**. Les vols et hôtels peuvent afficher des offres live uniquement quand l’API Amadeus est correctement configurée, accessible et autorisée à fournir l’inventaire demandé. Les offres ne garantissent pas la disponibilité au moment de la réservation. Le prototype ne réserve rien et ne calcule pas encore un coût total vol + hôtel.
+Les prix et durées du catalogue de destinations sont **fictifs, à titre de démonstration**. Les vols et hôtels peuvent afficher des offres live uniquement quand l’API Amadeus est correctement configurée, accessible et autorisée à fournir l’inventaire demandé. Les offres ne garantissent pas la disponibilité au moment de la réservation. L’interface peut calculer un total partiel lorsque les deux recherches live ont réussi : vol aller pour un voyageur + hébergement pour le séjour et une chambre, dans la même devise. Ce total exclut le retour et les frais non fournis; le prototype ne réserve rien.
 
 ## Prochaines étapes vers un produit fiable
 
 1. **Bloquant pour le lancement public :** configurer des identifiants fournisseur actifs, déployer l’API et vérifier la couverture réelle depuis l’Algérie, les conditions d’accès et les droits d’affichage.
-2. Calculer un coût total comparable (vol aller + hébergement pour le nombre de nuits + frais connus) en gardant les devises et périodes compatibles.
-4. Ajouter les filtres de durée, bagages, escales, devise, nombre de voyageurs et coût total du séjour.
-5. Tester l’installation PWA, le mode hors ligne, l’accessibilité et les parcours mobiles Android/iOS.
-6. Automatiser les tests fonctionnels et de non-régression avant le lancement.
+2. Étendre le calcul au retour, aux voyageurs/chambres configurables et aux frais connus, sans mélanger les devises.
+3. Ajouter les filtres de durée, bagages, escales, devise, nombre de voyageurs et coût total du séjour.
+4. Tester l’installation PWA, le mode hors ligne, l’accessibilité et les parcours mobiles Android/iOS.
+5. Automatiser les tests fonctionnels et de non-régression avant le lancement.
 
 **Règle de vérité produit :** tant qu’aucun fournisseur n’est connecté, les prix restent explicitement fictifs et ne doivent jamais être présentés comme des offres disponibles ou réservables.
 
