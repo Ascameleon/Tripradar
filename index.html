@@ -63,9 +63,11 @@ const airportCodes={alger:"ALG",algiers:"ALG",alg:"ALG",oran:"ORN",orn:"ORN",con
 const destinationCodes={tunis:"TUN",istanbul:"IST",barcelone:"BCN",rome:"FCO",lisbonne:"LIS",paris:"PAR",athenes:"ATH",madrid:"MAD",dubai:"DXB"};
 function resolveAirport(value){const raw=value.split("(")[0].trim().toLocaleLowerCase("fr");if(/^[a-z]{3}$/i.test(raw))return raw.toUpperCase();return airportCodes[raw]||null}
 function showLivePanel(message,source="",heading="Résultats vérifiés"){const panel=$("livePanel");panel.hidden=false;$("liveHeading").textContent=heading;$("liveMessage").textContent=message;$("liveSource").textContent=source;$("liveOffers").innerHTML=""}
-const liveFlightOffersByDestination={};const liveHotelOffersByDestination={};
+const liveFlightOffersByDestination={};const liveHotelOffersByDestination={};const liveFlightCriteriaByDestination={};const liveHotelCriteriaByDestination={};
+function currentCriteriaKey(){return JSON.stringify({origin:$("origin").value.trim()||"Alger",from:$("dateFrom").value,to:$("dateTo").value})}
 const hotelCityCodes={tunis:"TUN",istanbul:"IST",barcelone:"BCN",rome:"ROM",lisbonne:"LIS",paris:"PAR",athenes:"ATH",madrid:"MAD",dubai:"DXB"};
 function renderTripEstimate(destinationId){
+ const key=currentCriteriaKey();if(liveFlightCriteriaByDestination[destinationId]!==key||liveHotelCriteriaByDestination[destinationId]!==key){$("tripEstimatePanel").hidden=true;$("tripEstimateContent").textContent="";return}
  const flights=liveFlightOffersByDestination[destinationId]||[];const hotels=liveHotelOffersByDestination[destinationId]||[];
  const panel=$("tripEstimatePanel");const content=$("tripEstimateContent");
  if(!flights.length||!hotels.length){panel.hidden=true;content.innerHTML="";return}
@@ -80,6 +82,7 @@ function renderTripEstimate(destinationId){
 async function searchFlightsForDestination(destination){
  const originText=$("origin").value.trim()||"Alger";const origin=resolveAirport(originText);const destinationCode=destinationCodes[destination.id];const date=$("dateFrom").value||isoTomorrow();
  const route="Flights from "+originText.split("(")[0].trim()+" to "+destination.city+(date?" on "+date:"")+($("dateTo").value?" returning "+$("dateTo").value:"");
+ liveFlightCriteriaByDestination[destination.id]=currentCriteriaKey();
  if(!origin){showLivePanel("Ville de départ non reconnue pour la recherche en direct. Utilisez un code IATA (ex. ALG) ou ouvrez la recherche externe.","Recherche externe","Résultats de vols");addFallbackLink(route);$("livePanel").scrollIntoView({behavior:"smooth",block:"nearest"});return}
  liveFlightOffersByDestination[destination.id]=[];renderTripEstimate(destination.id);
  showLivePanel("Recherche des tarifs en cours…","Connexion au fournisseur","Résultats de vols");
@@ -102,6 +105,7 @@ async function searchHotelsForDestination(destination){
  const cityCode=hotelCityCodes[destination.id];const adults=1;const from=$("dateFrom").value||isoTomorrow();
  const defaultCheckout=new Date(from+"T12:00:00");defaultCheckout.setDate(defaultCheckout.getDate()+2);
  const to=$("dateTo").value&&$("dateTo").value>from?$("dateTo").value:iso(defaultCheckout);
+ liveHotelCriteriaByDestination[destination.id]=currentCriteriaKey();
  const bookingUrl=new URL("https://www.booking.com/searchresults.html");bookingUrl.searchParams.set("ss",destination.city);bookingUrl.searchParams.set("checkin",from);bookingUrl.searchParams.set("checkout",to);bookingUrl.searchParams.set("group_adults",String(adults));
  liveHotelOffersByDestination[destination.id]=[];renderTripEstimate(destination.id);
  showLivePanel("Recherche des hébergements en cours…","Connexion au fournisseur","Résultats d’hébergements");
