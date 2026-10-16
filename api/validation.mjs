@@ -6,7 +6,7 @@ export function validateSearch(input, now = new Date()) {
   const returnDate = String(input.returnDate || "");
   const adults = Number(input.adults ?? 1);
   const currencyCode = String(input.currencyCode || "EUR").toUpperCase();
-  const isoDate = /^\\d{4}-\\d{2}-\\d{2}$/;
+  const isoDate = /^\d{4}-\d{2}-\d{2}$/;
   const parseDate = (value) => {
     if (!isoDate.test(value)) return null;
     const parsed = new Date(`${value}T00:00:00Z`);
