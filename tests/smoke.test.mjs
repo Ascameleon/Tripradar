@@ -51,6 +51,7 @@ test("flight cards attempt live API search and clearly fall back without inventi
   assert.match(html, /renderTripEstimate/);
   assert.match(html, /liveFlightCriteriaByDestination\[destinationId\]!==key\|\|liveHotelCriteriaByDestination\[destinationId\]!==key/);
   assert.match(html, /function currentCriteriaKey\(\)/);
+  assert.match(html, /\["origin","dateFrom","dateTo"\]\.forEach\(id=>\$\(id\)\.addEventListener\("input"/);
   assert.match(html, /flight\.tripType==="round-trip"/);
   assert.match(html, /returnDate:\$\("dateTo"\)\.value/);
   assert.match(readme, /\/api\/hotels\/search/);
@@ -80,7 +81,7 @@ test("API applies bounded request, header, and keep-alive timeouts", async () =>
 test("PWA metadata and offline shell are present", () => {
   assert.equal(manifest.short_name, "TripRadar");
   assert.equal(manifest.display, "standalone");
-  assert.match(worker, /tripradar-static-v3/);
+  assert.match(worker, /tripradar-static-v4/);
   assert.match(worker, /addAll\(APP_FILES\)/);
   assert.match(html, /serviceWorker\.register/);
   assert.ok(html.includes('<script src="./config.js"></script>'));
