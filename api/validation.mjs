@@ -5,7 +5,6 @@ export function validateSearch(input, now = new Date()) {
   const departureDate = String(input.departureDate || "");
   const returnDate = String(input.returnDate || "");
   const adults = Number(input.adults ?? 1);
-  const roomQuantity = Number(input.roomQuantity ?? 1);
   const currencyCode = String(input.currencyCode || "EUR").toUpperCase();
   const isoDate = /^\d{4}-\d{2}-\d{2}$/;
   const parseDate = (value) => {
