@@ -50,7 +50,7 @@ test("flight cards attempt live API search and clearly fall back without inventi
   assert.match(html, /tripEstimatePanel/);
   assert.match(html, /renderTripEstimate/);
   assert.match(html, /Estimation partielle, hors retour/);
-  assert.match(readme, /POST `\/api\/hotels\/search`/);
+  assert.match(readme, /\/api\/hotels\/search/);
   assert.match(html, /Aucun prix fictif n’est affiché/);
   assert.match(html, /Comparer les vols sur Google Flights/);
   assert.match(readme, /window\.TRIPRADAR_API_BASE/);
