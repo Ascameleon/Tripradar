@@ -22,9 +22,28 @@ export async function searchFlights(input, fetchImpl = fetch) {
   const payload = await response.json();
   return (payload.data || []).map((offer) => {
     const itineraries = offer.itineraries || [];
-    const segments = itineraries.flatMap((itinerary) => itinerary.segments || []);
-    const first = segments[0]; const last = segments[segments.length - 1];
-    return { id: String(offer.id || ""), price: Number(offer.price?.grandTotal), currency: offer.price?.currency || input.currencyCode, origin: first?.departure?.iataCode || input.origin, destination: last?.arrival?.iataCode || input.destination, departureAt: first?.departure?.at || null, arrivalAt: last?.arrival?.at || null, stops: itineraries.map((itinerary) => Math.max(0, (itinerary.segments || []).length - 1)), validatingAirlineCodes: offer.validatingAirlineCodes || [], checkedAt: new Date().toISOString(), provider: "Amadeus", tripType: input.returnDate ? "round-trip" : "one-way" };
+    const outboundSegments = itineraries[0]?.segments || [];
+    const returnSegments = itineraries[1]?.segments || [];
+    const first = outboundSegments[0];
+    const last = outboundSegments[outboundSegments.length - 1];
+    const returnFirst = returnSegments[0];
+    const returnLast = returnSegments[returnSegments.length - 1];
+    return {
+      id: String(offer.id || ""),
+      price: Number(offer.price?.grandTotal),
+      currency: offer.price?.currency || input.currencyCode,
+      origin: first?.departure?.iataCode || input.origin,
+      destination: last?.arrival?.iataCode || input.destination,
+      departureAt: first?.departure?.at || null,
+      arrivalAt: last?.arrival?.at || null,
+      returnDepartureAt: returnFirst?.departure?.at || null,
+      returnArrivalAt: returnLast?.arrival?.at || null,
+      stops: itineraries.map((itinerary) => Math.max(0, (itinerary.segments || []).length - 1)),
+      validatingAirlineCodes: offer.validatingAirlineCodes || [],
+      checkedAt: new Date().toISOString(),
+      provider: "Amadeus",
+      tripType: input.returnDate ? "round-trip" : "one-way"
+    };
   }).filter((offer) => Number.isFinite(offer.price) && offer.price >= 0).sort((a, b) => a.price - b.price);
 }
 
