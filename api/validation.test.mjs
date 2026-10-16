@@ -41,7 +41,7 @@ test("accepts a valid hotel search and normalizes city and currency", () => {
   assert.deepEqual(validateHotelSearch({
     cityCode: "ist", checkInDate: "2026-11-10", checkOutDate: "2026-11-14", adults: 2, currencyCode: "eur"
   }, today), {
-    cityCode: "IST", checkInDate: "2026-11-10", checkOutDate: "2026-11-14", adults: 2, currencyCode: "EUR"
+    cityCode: "IST", checkInDate: "2026-11-10", checkOutDate: "2026-11-14", adults: 2, roomQuantity: 1, currencyCode: "EUR"
   });
 });
 
@@ -54,5 +54,8 @@ test("rejects invalid hotel payloads, dates, city codes, guests, and currency", 
   assert.equal(validateHotelSearch({ ...hotel, cityCode: "Istanbul" }, today), null);
   assert.equal(validateHotelSearch({ ...hotel, adults: 10 }, today), null);
   assert.equal(validateHotelSearch({ ...hotel, adults: 0 }, today), null);
+  assert.equal(validateHotelSearch({ ...hotel, roomQuantity: 0 }, today), null);
+  assert.equal(validateHotelSearch({ ...hotel, roomQuantity: 5 }, today), null);
+  assert.equal(validateHotelSearch({ ...hotel, roomQuantity: 3 }, today).roomQuantity, 3);
   assert.equal(validateHotelSearch({ ...hotel, currencyCode: "EURO" }, today), null);
 });
