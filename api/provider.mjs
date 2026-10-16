@@ -16,6 +16,7 @@ async function getToken(fetchImpl = fetch) {
 export async function searchFlights(input, fetchImpl = fetch) {
   const token = await getToken(fetchImpl);
   const params = new URLSearchParams({ originLocationCode: input.origin, destinationLocationCode: input.destination, departureDate: input.departureDate, adults: String(input.adults), currencyCode: input.currencyCode, max: "20" });
+  if (input.returnDate) params.set("returnDate", input.returnDate);
   const response = await fetchImpl(`${BASE}/v2/shopping/flight-offers?${params}`, { headers: { authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000) });
   if (!response.ok) { const error = new Error("Flight search failed"); error.status = response.status; throw error; }
   const payload = await response.json();
@@ -23,7 +24,7 @@ export async function searchFlights(input, fetchImpl = fetch) {
     const itineraries = offer.itineraries || [];
     const segments = itineraries.flatMap((itinerary) => itinerary.segments || []);
     const first = segments[0]; const last = segments[segments.length - 1];
-    return { id: String(offer.id || ""), price: Number(offer.price?.grandTotal), currency: offer.price?.currency || input.currencyCode, origin: first?.departure?.iataCode || input.origin, destination: last?.arrival?.iataCode || input.destination, departureAt: first?.departure?.at || null, arrivalAt: last?.arrival?.at || null, stops: itineraries.map((itinerary) => Math.max(0, (itinerary.segments || []).length - 1)), validatingAirlineCodes: offer.validatingAirlineCodes || [], checkedAt: new Date().toISOString(), provider: "Amadeus" };
+    return { id: String(offer.id || ""), price: Number(offer.price?.grandTotal), currency: offer.price?.currency || input.currencyCode, origin: first?.departure?.iataCode || input.origin, destination: last?.arrival?.iataCode || input.destination, departureAt: first?.departure?.at || null, arrivalAt: last?.arrival?.at || null, stops: itineraries.map((itinerary) => Math.max(0, (itinerary.segments || []).length - 1)), validatingAirlineCodes: offer.validatingAirlineCodes || [], checkedAt: new Date().toISOString(), provider: "Amadeus", tripType: input.returnDate ? "round-trip" : "one-way" };
   }).filter((offer) => Number.isFinite(offer.price) && offer.price >= 0).sort((a, b) => a.price - b.price);
 }
 
