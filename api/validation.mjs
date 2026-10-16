@@ -5,6 +5,7 @@ export function validateSearch(input, now = new Date()) {
   const departureDate = String(input.departureDate || "");
   const returnDate = String(input.returnDate || "");
   const adults = Number(input.adults ?? 1);
+  const roomQuantity = Number(input.roomQuantity ?? 1);
   const currencyCode = String(input.currencyCode || "EUR").toUpperCase();
   const isoDate = /^\d{4}-\d{2}-\d{2}$/;
   const parseDate = (value) => {
@@ -28,6 +29,7 @@ export function validateHotelSearch(input, now = new Date()) {
   const checkInDate = String(input.checkInDate || "");
   const checkOutDate = String(input.checkOutDate || "");
   const adults = Number(input.adults ?? 1);
+  const roomQuantity = Number(input.roomQuantity ?? 1);
   const currencyCode = String(input.currencyCode || "EUR").toUpperCase();
   const isoDate = /^\d{4}-\d{2}-\d{2}$/;
   const parseDate = (value) => {
@@ -39,6 +41,6 @@ export function validateHotelSearch(input, now = new Date()) {
   const checkOut = parseDate(checkOutDate);
   const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   if (!/^[A-Z]{3}$/.test(cityCode) || !checkIn || !checkOut || checkIn < today || checkOut <= checkIn ||
-      !Number.isInteger(adults) || adults < 1 || adults > 9 || !/^[A-Z]{3}$/.test(currencyCode)) return null;
-  return { cityCode, checkInDate, checkOutDate, adults, currencyCode };
+      !Number.isInteger(adults) || adults < 1 || adults > 9 || !Number.isInteger(roomQuantity) || roomQuantity < 1 || roomQuantity > 4 || !/^[A-Z]{3}$/.test(currencyCode)) return null;
+  return { cityCode, checkInDate, checkOutDate, adults, roomQuantity, currencyCode };
 }
