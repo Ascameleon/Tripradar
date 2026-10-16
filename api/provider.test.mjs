@@ -94,6 +94,9 @@ test("passes a return date to Amadeus and labels round-trip fares", async () => 
       returnDate: "2026-11-14", adults: 1, currencyCode: "EUR"
     }, fakeFetch);
     assert.equal(offers[0].tripType, "round-trip");
+    assert.equal(offers[0].arrivalAt, "2026-11-10T11:00:00");
+    assert.equal(offers[0].returnDepartureAt, "2026-11-14T12:00:00");
+    assert.equal(offers[0].returnArrivalAt, "2026-11-14T15:00:00");
     assert.ok(calls.some((url) => url.includes("returnDate=2026-11-14")));
   } finally {
     if (oldId === undefined) delete process.env.AMADEUS_CLIENT_ID;
