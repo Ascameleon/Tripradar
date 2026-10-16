@@ -19,7 +19,7 @@ test("inline application JavaScript parses without syntax errors", () => {
 });
 
 test("TripRadar exposes the core search, filter, and favorites controls", () => {
-  for (const id of ["searchForm", "origin", "dateFrom", "dateTo", "budget", "adults", "destinationFilter", "sortBy", "results", "savedList", "favCount"]) {
+  for (const id of ["searchForm", "origin", "dateFrom", "dateTo", "budget", "adults", "rooms", "destinationFilter", "sortBy", "results", "savedList", "favCount"]) {
     assert.match(html, new RegExp('id="' + id + '"'), "missing #" + id);
   }
 });
@@ -33,6 +33,9 @@ test("traveler count is sent to live flight and hotel searches and invalidates o
   assert.match(html, /id="adults"/);
   assert.match(html, /adults:Number\(\$\("adults"\)\.value\|\|1\)/);
   assert.match(html, /group_adults",String\(adults\)/);
+  assert.match(html, /roomQuantity:Number\(\$\("rooms"\)\.value\|\|1\)/);
+  assert.match(html, /no_rooms",String\(\$\("rooms"\)\.value\|\|1\)/);
+  assert.match(html, /\$\("rooms"\)\.addEventListener\("change"/);
   assert.match(html, /\$\("adults"\)\.addEventListener\("change"/);
   assert.match(html, /voyageur\(s\)/);
 });
