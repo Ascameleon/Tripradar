@@ -136,7 +136,7 @@ test("searches hotel inventory and sorts verified offers by total price", async 
   };
   try {
     const offers = await searchHotels({
-      cityCode: "IST", checkInDate: "2026-11-10", checkOutDate: "2026-11-14", adults: 2, currencyCode: "EUR"
+      cityCode: "IST", checkInDate: "2026-11-10", checkOutDate: "2026-11-14", adults: 2, roomQuantity: 2, currencyCode: "EUR"
     }, fakeFetch);
     assert.equal(offers.length, 2);
     assert.equal(offers[0].name, "Hotel Beta");
@@ -145,7 +145,7 @@ test("searches hotel inventory and sorts verified offers by total price", async 
     assert.equal(offers[0].checkOutDate, "2026-11-14");
     assert.ok(calls.some((url) => url.includes("cityCode=IST")));
     assert.ok(calls.some((url) => url.includes("hotelIds=H1%2CH2")));
-    assert.ok(calls.some((url) => url.includes("roomQuantity=1")));
+    assert.ok(calls.some((url) => url.includes("roomQuantity=2")));
   } finally {
     if (oldId === undefined) delete process.env.AMADEUS_CLIENT_ID;
     else process.env.AMADEUS_CLIENT_ID = oldId;
