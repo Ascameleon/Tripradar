@@ -28,6 +28,15 @@ test("rejects unsupported passenger counts and malformed currency codes", () => 
   assert.equal(validateSearch({ ...valid, currencyCode: "EURO" }, today), null);
 });
 
+test("accepts valid round-trip dates and rejects invalid return dates", () => {
+  assert.deepEqual(validateSearch({ ...valid, returnDate: "2026-11-14" }, today), {
+    ...valid, returnDate: "2026-11-14"
+  });
+  assert.equal(validateSearch({ ...valid, returnDate: "2026-11-10" }, today), null);
+  assert.equal(validateSearch({ ...valid, returnDate: "2026-02-30" }, today), null);
+  assert.equal(validateSearch({ ...valid, returnDate: "2026-10-14" }, today), null);
+});
+
 test("accepts a valid hotel search and normalizes city and currency", () => {
   assert.deepEqual(validateHotelSearch({
     cityCode: "ist", checkInDate: "2026-11-10", checkOutDate: "2026-11-14", adults: 2, currencyCode: "eur"
