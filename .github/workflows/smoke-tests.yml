@@ -16,5 +16,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Validate Docker Compose configuration
+        run: docker compose config --quiet
+      - name: Build API container
+        run: docker build -t tripradar-api:test .
       - name: Run smoke regression tests
         run: npm test
