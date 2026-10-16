@@ -1,4 +1,4 @@
-name: TripRadar smoke tests
+name: TripRadar quality checks
 on:
   push:
     branches: [main]
@@ -8,12 +8,23 @@ on:
 permissions:
   contents: read
 jobs:
-  smoke:
+  quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Run smoke tests
+      - name: Run Python smoke tests
         run: python -m unittest discover -s tests -v
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Validate Docker Compose configuration
+        run: docker compose config --quiet
+      - name: Build API container
+        run: docker build -t tripradar-api:test .
+      - name: Run API and frontend regression tests
+        run: npm test
