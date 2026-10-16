@@ -28,6 +28,7 @@ footer{background:var(--navy);color:#cbd5e1;padding:28px 0;font-size:12px}footer
 <div class="field"><label for="dateTo">Retour avant le</label><input id="dateTo" type="date"></div>
 <div class="field"><label for="budget">Budget vol max.</label><select id="budget"><option value="all">Sans limite</option><option value="150">150 €</option><option value="250">250 €</option><option value="400">400 €</option><option value="600">600 €</option></select></div>
 <div class="field"><label for="adults">Voyageurs</label><select id="adults" name="adults"><option value="1">1 adulte</option><option value="2">2 adultes</option><option value="3">3 adultes</option><option value="4">4 adultes</option><option value="5">5 adultes</option><option value="6">6 adultes</option></select></div>
+<div class="field"><label for="rooms">Chambres</label><select id="rooms" name="rooms"><option value="1">1 chambre</option><option value="2">2 chambres</option><option value="3">3 chambres</option><option value="4">4 chambres</option></select></div>
 <button class="primary" type="submit">Trouver ↗</button></div><div class="hint">Dates flexibles · Destinations triées par prix · Hébergements à comparer ensuite</div></form></section></div></header>
 <main class="wrap">
 <section id="destinations"><div class="sectiontop"><div><h2>Où partir pour moins cher ?</h2><p id="resultCount">Des idées pour commencer votre radar.</p></div><div class="chip"><span class="statusdot"></span> Aperçu de démonstration</div></div>
@@ -65,7 +66,7 @@ const destinationCodes={tunis:"TUN",istanbul:"IST",barcelone:"BCN",rome:"FCO",li
 function resolveAirport(value){const raw=value.split("(")[0].trim().toLocaleLowerCase("fr");if(/^[a-z]{3}$/i.test(raw))return raw.toUpperCase();return airportCodes[raw]||null}
 function showLivePanel(message,source="",heading="Résultats vérifiés"){const panel=$("livePanel");panel.hidden=false;$("liveHeading").textContent=heading;$("liveMessage").textContent=message;$("liveSource").textContent=source;$("liveOffers").innerHTML=""}
 const liveFlightOffersByDestination={};const liveHotelOffersByDestination={};const liveFlightCriteriaByDestination={};const liveHotelCriteriaByDestination={};
-function currentCriteriaKey(){return JSON.stringify({origin:$("origin").value.trim()||"Alger",from:$("dateFrom").value,to:$("dateTo").value,adults:Number($("adults").value||1)})}
+function currentCriteriaKey(){return JSON.stringify({origin:$("origin").value.trim()||"Alger",from:$("dateFrom").value,to:$("dateTo").value,adults:Number($("adults").value||1),rooms:Number($("rooms").value||1)})}
 const hotelCityCodes={tunis:"TUN",istanbul:"IST",barcelone:"BCN",rome:"ROM",lisbonne:"LIS",paris:"PAR",athenes:"ATH",madrid:"MAD",dubai:"DXB"};
 function renderTripEstimate(destinationId){
  const key=currentCriteriaKey();if(liveFlightCriteriaByDestination[destinationId]!==key||liveHotelCriteriaByDestination[destinationId]!==key){$("tripEstimatePanel").hidden=true;$("tripEstimateContent").textContent="";return}
@@ -78,7 +79,7 @@ function renderTripEstimate(destinationId){
  if(!flight.currency||flight.currency!==hotel.currency){content.textContent="Offres trouvées, mais le total ne peut pas être calculé car les devises diffèrent.";return}
  const total=Number(flight.price)+Number(hotel.price);
  if(!Number.isFinite(total)){content.textContent="Total indisponible : prix incomplets fournis par le fournisseur.";return}
- content.innerHTML='<p>Vol '+(flight.tripType==="round-trip"?"aller-retour":"aller")+' ('+esc($("adults").value||"1")+' voyageur(s)) + hébergement (1 chambre, séjour sélectionné).</p><p>'+esc(flight.validatingAirlineCodes?.join(", ")||"Vol sélectionné")+' : '+esc(flight.price)+' '+esc(flight.currency)+'</p><p>'+esc(hotel.name||"Hébergement sélectionné")+' : '+esc(hotel.price)+' '+esc(hotel.currency)+'</p><p class="estimatevalue">'+esc(total.toFixed(2))+' '+esc(flight.currency)+'</p><small>Estimation partielle'+(flight.tripType==="round-trip"?"":" (hors retour)")+', hors transferts, bagages non inclus et frais non fournis. Confirmer les prix auprès du fournisseur.</small>';
+ content.innerHTML='<p>Vol '+(flight.tripType==="round-trip"?"aller-retour":"aller")+' ('+esc($("adults").value||"1")+' voyageur(s)) + hébergement ('+esc($("rooms").value||"1")+' chambre(s), séjour sélectionné).</p><p>'+esc(flight.validatingAirlineCodes?.join(", ")||"Vol sélectionné")+' : '+esc(flight.price)+' '+esc(flight.currency)+'</p><p>'+esc(hotel.name||"Hébergement sélectionné")+' : '+esc(hotel.price)+' '+esc(hotel.currency)+'</p><p class="estimatevalue">'+esc(total.toFixed(2))+' '+esc(flight.currency)+'</p><small>Estimation partielle'+(flight.tripType==="round-trip"?"":" (hors retour)")+', hors transferts, bagages non inclus et frais non fournis. Confirmer les prix auprès du fournisseur.</small>';
 }
 async function searchFlightsForDestination(destination){
  const originText=$("origin").value.trim()||"Alger";const origin=resolveAirport(originText);const destinationCode=destinationCodes[destination.id];const date=$("dateFrom").value||isoTomorrow();
@@ -107,7 +108,7 @@ async function searchHotelsForDestination(destination){
  const defaultCheckout=new Date(from+"T12:00:00");defaultCheckout.setDate(defaultCheckout.getDate()+2);
  const to=$("dateTo").value&&$("dateTo").value>from?$("dateTo").value:iso(defaultCheckout);
  liveHotelCriteriaByDestination[destination.id]=currentCriteriaKey();
- const bookingUrl=new URL("https://www.booking.com/searchresults.html");bookingUrl.searchParams.set("ss",destination.city);bookingUrl.searchParams.set("checkin",from);bookingUrl.searchParams.set("checkout",to);bookingUrl.searchParams.set("group_adults",String(adults));
+ const bookingUrl=new URL("https://www.booking.com/searchresults.html");bookingUrl.searchParams.set("ss",destination.city);bookingUrl.searchParams.set("checkin",from);bookingUrl.searchParams.set("checkout",to);bookingUrl.searchParams.set("group_adults",String(adults));bookingUrl.searchParams.set("no_rooms",String($("rooms").value||1));
  liveHotelOffersByDestination[destination.id]=[];renderTripEstimate(destination.id);
  showLivePanel("Recherche des hébergements en cours…","Connexion au fournisseur","Résultats d’hébergements");
  const apiBase=(window.TRIPRADAR_API_BASE||location.origin).replace(/\/$/,"");
@@ -115,7 +116,7 @@ async function searchHotelsForDestination(destination){
   const health=await fetch(apiBase+"/api/health",{headers:{accept:"application/json"},signal:AbortSignal.timeout(12000)});
   if(!health.ok)throw new Error("api_unavailable");
   const status=await health.json();if(!status.providerConfigured)throw new Error("provider_not_configured");
-  const response=await fetch(apiBase+"/api/hotels/search",{method:"POST",headers:{"content-type":"application/json",accept:"application/json"},body:JSON.stringify({cityCode,checkInDate:from,checkOutDate:to,adults,currencyCode:"EUR"}),signal:AbortSignal.timeout(22000)});
+  const response=await fetch(apiBase+"/api/hotels/search",{method:"POST",headers:{"content-type":"application/json",accept:"application/json"},body:JSON.stringify({cityCode,checkInDate:from,checkOutDate:to,adults,roomQuantity:Number($("rooms").value||1),currencyCode:"EUR"}),signal:AbortSignal.timeout(22000)});
   const payload=await response.json();if(!response.ok)throw new Error(payload.message||"search_failed");
   const offers=Array.isArray(payload.offers)?payload.offers:[];liveHotelOffersByDestination[destination.id]=offers;renderTripEstimate(destination.id);
   $("liveSource").textContent="Amadeus · vérifié le "+new Date(payload.checkedAt||Date.now()).toLocaleString("fr-FR");
@@ -136,7 +137,7 @@ $("savedList").addEventListener("click",e=>{const b=e.target.closest("[data-remo
 $("destinationFilter").addEventListener("input",render);$("sortBy").addEventListener("change",render);$("searchForm").addEventListener("submit",e=>{e.preventDefault();if(!$("origin").value.trim()){toast("Indiquez votre ville ou aéroport de départ.");$("origin").focus();return}if($("dateFrom").value&&$("dateTo").value&&$("dateTo").value<=$("dateFrom").value){toast("Le retour doit être au moins un jour après le départ.");$("dateTo").focus();return}render();$("destinations").scrollIntoView({behavior:"smooth",block:"start"})});
 $("langBtn").addEventListener("click",()=>toast("Le prototype est actuellement en français. Les versions arabe et anglaise sont prévues."));
 const today=new Date();const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");$("dateFrom").min=iso(today);const ret=new Date(today);ret.setDate(ret.getDate()+1);$("dateTo").min=iso(ret);$("dateFrom").addEventListener("change",()=>{if($("dateFrom").value){const minReturn=new Date($("dateFrom").value+"T12:00:00");minReturn.setDate(minReturn.getDate()+1);$("dateTo").min=iso(minReturn);if($("dateTo").value&&$("dateTo").value<iso(minReturn))$("dateTo").value=iso(minReturn)}else $("dateTo").min=iso(ret)});
-["origin","dateFrom","dateTo"].forEach(id=>$(id).addEventListener("input",()=>{$("tripEstimatePanel").hidden=true;$("tripEstimateContent").textContent=""}));$("adults").addEventListener("change",()=>{$("tripEstimatePanel").hidden=true;$("tripEstimateContent").textContent=""});
+["origin","dateFrom","dateTo"].forEach(id=>$(id).addEventListener("input",()=>{$("tripEstimatePanel").hidden=true;$("tripEstimateContent").textContent=""}));$("adults").addEventListener("change",()=>{$("tripEstimatePanel").hidden=true;$("tripEstimateContent").textContent=""});$("rooms").addEventListener("change",()=>{$("tripEstimatePanel").hidden=true;$("tripEstimateContent").textContent=""});
 render();
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) { window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {})); }
 </script></body></html>
