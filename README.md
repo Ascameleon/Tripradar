@@ -36,7 +36,7 @@ Ouvrir `index.html` dans un navigateur moderne. Pour installer l’application e
 ## Déploiement
 
 - **Interface statique :** publier `index.html`, `config.js`, `manifest.webmanifest`, `icon.svg` et `sw.js` sur un hébergement HTTPS statique. Si l’API est sur un autre domaine, définir son URL dans `config.js` avant publication.
-- **API Docker :** construire avec `docker build -t tripradar-api .`, puis lancer le conteneur en fournissant `AMADEUS_CLIENT_ID`, `AMADEUS_CLIENT_SECRET` et `ALLOWED_ORIGIN` comme variables d’environnement. Ne jamais incorporer les secrets à l’image.
+- **API Docker :** copier `.env.example` vers `.env`, renseigner `AMADEUS_CLIENT_ID`, `AMADEUS_CLIENT_SECRET` et l’origine HTTPS exacte de l’interface dans `ALLOWED_ORIGIN`, puis lancer `docker compose up --build -d`. Contrôler l’état avec `docker compose ps` et `curl http://localhost:3000/api/health`. Le conteneur inclut un healthcheck. Ne jamais incorporer les secrets à l’image ni committer `.env`.
 - L’API écoute sur le port `3000` par défaut. Déployer l’API et l’interface sur des services séparés reste possible grâce à la configuration d’origine CORS.
 
 ## Limites connues — transparence
