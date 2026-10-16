@@ -67,7 +67,7 @@ export async function searchHotels(input, fetchImpl = fetch) {
     checkInDate: input.checkInDate,
     checkOutDate: input.checkOutDate,
     adults: String(input.adults || 1),
-    roomQuantity: "1",
+    roomQuantity: String(input.roomQuantity || 1),
     currency: input.currencyCode || "EUR"
   });
   const offersResponse = await fetchImpl(`${BASE}/v3/shopping/hotel-offers?${offerParams}`, {
