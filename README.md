@@ -11,7 +11,7 @@
 - Filtre texte et tri par prix croissant/décroissant ou nom.
 - Recherche live optionnelle sur les cartes de vols si l’API Amadeus est configurée; bascule explicite vers Google Flights sinon.
 - Recherche live optionnelle des hôtels via l’API Amadeus, avec repli Booking.com si indisponible.
-- Nombre de voyageurs configurable (1 à 6 adultes), transmis aux recherches de vols, d’hôtels et au comparateur externe.
+- Nombre de voyageurs configurable (1 à 6 adultes) et nombre de chambres (1 à 4), transmis aux recherches de vols, d’hôtels et au comparateur externe.
 - Manifest PWA, icône dédiée et cache du shell pour ouvrir l’application hors ligne après la première visite.
 - Interface responsive mobile/desktop, sans dépendance ni build.
 
@@ -23,7 +23,7 @@ Une API Node.js sans dépendances est disponible dans `api/`. Elle utilise l'API
 2. Copier `.env.example` vers `.env` et renseigner `AMADEUS_CLIENT_ID` et `AMADEUS_CLIENT_SECRET` depuis votre compte fournisseur. Ne jamais committer `.env`.
 3. Définir `ALLOWED_ORIGIN` sur l’origine exacte de l’interface en production; l’API rejette les autres origines navigateur.
 4. En local, lancer `node --env-file=.env api/server.mjs` (Node.js 20.6+). En production, fournir les variables comme secrets d’environnement de la plateforme.
-5. Vérifier `GET /api/health`, puis tester `POST /api/flights/search` (`origin`, `destination`, `departureDate`, `returnDate` facultatif, `adults`, `currencyCode`) et `POST /api/hotels/search` (`cityCode`, `checkInDate`, `checkOutDate`, `adults`, `currencyCode`).
+5. Vérifier `GET /api/health`, puis tester `POST /api/flights/search` (`origin`, `destination`, `departureDate`, `returnDate` facultatif, `adults`, `currencyCode`) et `POST /api/hotels/search` (`cityCode`, `checkInDate`, `checkOutDate`, `adults`, `roomQuantity` (1 à 4, facultatif), `currencyCode`).
 6. Utiliser l'environnement de test jusqu'à validation du compte et de l'accès production.
 
 Tests locaux : `npm test` (ou `node --test tests/*.mjs api/*.test.mjs`). La suite couvre les validations vols/hôtels et aller-retour, la normalisation et le tri des offres, le rendu du front-end, ainsi qu’un test d’intégration HTTP qui démarre réellement l’API et vérifie la santé, CORS, les types de contenu, les paramètres invalides, l’absence de clés fournisseur et les routes inconnues. La CI GitHub Actions vérifie aussi la configuration Docker Compose et construit l’image du conteneur à chaque push sur `main`. Les tests ne nécessitent aucune clé fournisseur.
@@ -47,7 +47,7 @@ Les prix et durées du catalogue de destinations sont **fictifs, à titre de dé
 ## Prochaines étapes vers un produit fiable
 
 1. **Bloquant pour le lancement public :** configurer des identifiants fournisseur actifs, déployer l’API et vérifier la couverture réelle depuis l’Algérie, les conditions d’accès et les droits d’affichage.
-2. Étendre le calcul aux voyageurs/chambres configurables et aux frais connus, sans mélanger les devises.
+2. Étendre le calcul aux frais connus, sans mélanger les devises.
 3. Ajouter les filtres de durée, bagages, escales, devise, nombre de voyageurs et coût total du séjour.
 4. Tester l’installation PWA, le mode hors ligne, l’accessibilité et les parcours mobiles Android/iOS.
 5. Exécuter les tests de bout en bout sur l’API déployée, confirmer les tarifs et l’inventaire réels, puis valider les parcours Android/iOS.
