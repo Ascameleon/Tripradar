@@ -67,6 +67,9 @@ test("flight cards attempt live API search and clearly fall back without inventi
   assert.match(html, /returnDate:\$\("dateTo"\)\.value/);
   assert.match(readme, /\/api\/hotels\/search/);
   assert.match(html, /Aucun prix fictif n’est affiché/);
+  assert.match(html, /sétif:"QSF"/);
+  assert.match(html, /bejaia:"BJA"/);
+  assert.match(html, /tlemcen:"TLM"/);
   assert.match(html, /Comparer les vols sur Google Flights/);
   assert.match(readme, /window\.TRIPRADAR_API_BASE/);
 });
