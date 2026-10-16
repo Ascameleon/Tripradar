@@ -78,6 +78,24 @@ test("HTTP API health, CORS, validation, content type, and missing-provider beha
     message: "Aucune offre vérifiée disponible pour le moment."
   });
 
+  for (let index = 0; index < 27; index += 1) {
+    const response = await fetch(base + "/api/flights/search", {
+      method: "POST", headers: { origin, "content-type": "application/json" },
+      body: JSON.stringify({ origin: "ALG", destination: "CDG", departureDate: "2027-11-10", adults: 1, currencyCode: "EUR" })
+    });
+    assert.equal(response.status, 503, "provider errors count toward the rate limit");
+    await response.arrayBuffer();
+  }
+  const limited = await fetch(base + "/api/flights/search", {
+    method: "POST", headers: { origin, "content-type": "application/json" },
+    body: JSON.stringify({ origin: "ALG", destination: "CDG", departureDate: "2027-11-10", adults: 1, currencyCode: "EUR" })
+  });
+  assert.equal(limited.status, 429);
+  assert.deepEqual(await limited.json(), {
+    error: "rate_limited",
+    message: "Trop de recherches. Réessayez dans une minute."
+  });
+
   const unknown = await fetch(base + "/api/not-a-route", { headers: { origin } });
   assert.equal(unknown.status, 404);
 });
