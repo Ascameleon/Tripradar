@@ -1,4 +1,4 @@
-const CACHE_NAME = "tripradar-static-v5";
+const CACHE_NAME = "tripradar-static-v6";
 const APP_FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg", "./config.js"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_FILES)));
