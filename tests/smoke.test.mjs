@@ -19,7 +19,7 @@ test("inline application JavaScript parses without syntax errors", () => {
 });
 
 test("TripRadar exposes the core search, filter, and favorites controls", () => {
-  for (const id of ["searchForm", "origin", "dateFrom", "dateTo", "budget", "destinationFilter", "sortBy", "results", "savedList", "favCount"]) {
+  for (const id of ["searchForm", "origin", "dateFrom", "dateTo", "budget", "adults", "destinationFilter", "sortBy", "results", "savedList", "favCount"]) {
     assert.match(html, new RegExp('id="' + id + '"'), "missing #" + id);
   }
 });
@@ -27,6 +27,14 @@ test("TripRadar exposes the core search, filter, and favorites controls", () => 
 test("search validation rejects empty origin and return dates on or before departure", () => {
   assert.match(html, /Indiquez votre ville ou aéroport de départ/);
   assert.match(html, /\$\("dateTo"\)\.value\s*<=\s*\$\("dateFrom"\)\.value/);
+});
+
+test("traveler count is sent to live flight and hotel searches and invalidates old estimates", () => {
+  assert.match(html, /id="adults"/);
+  assert.match(html, /adults:Number\(\$\("adults"\)\.value\|\|1\)/);
+  assert.match(html, /group_adults",String\(adults\)/);
+  assert.match(html, /\$\("adults"\)\.addEventListener\("change"/);
+  assert.match(html, /voyageur\(s\)/);
 });
 
 test("the result summary follows the selected sort mode", () => {
