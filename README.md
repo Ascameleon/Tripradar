@@ -22,12 +22,12 @@ Une API Node.js sans dépendances est disponible dans `api/`. Elle utilise l'API
 2. Copier `.env.example` vers `.env` et renseigner `AMADEUS_CLIENT_ID` et `AMADEUS_CLIENT_SECRET` depuis votre compte fournisseur. Ne jamais committer `.env`.
 3. Définir `ALLOWED_ORIGIN` sur l’origine exacte de l’interface en production; l’API rejette les autres origines navigateur.
 4. En local, lancer `node --env-file=.env api/server.mjs` (Node.js 20.6+). En production, fournir les variables comme secrets d’environnement de la plateforme.
-5. Vérifier `GET /api/health`, puis tester `POST /api/flights/search` (`origin`, `destination`, `departureDate`, `adults`, `currencyCode`) et `POST /api/hotels/search` (`cityCode`, `checkInDate`, `checkOutDate`, `adults`, `currencyCode`).
+5. Vérifier `GET /api/health`, puis tester `POST /api/flights/search` (`origin`, `destination`, `departureDate`, `returnDate` facultatif, `adults`, `currencyCode`) et `POST /api/hotels/search` (`cityCode`, `checkInDate`, `checkOutDate`, `adults`, `currencyCode`).
 6. Utiliser l'environnement de test jusqu'à validation du compte et de l'accès production.
 
 Tests locaux : `npm test` (ou `node --test tests/*.mjs api/*.test.mjs`). La suite couvre les validations vols/hôtels, la normalisation et le tri des offres, ainsi que les contrats HTTP de l’API (CORS, erreurs JSON, validation, taille maximale des requêtes, fournisseur non configuré et routes inconnues). La CI GitHub Actions exécute cette suite à chaque push sur `main`. Les tests d’intégration lancent le serveur localement et n’exigent aucune clé fournisseur.
 
-**Intégration interface :** les boutons « Vols » tentent maintenant une recherche live via `/api/health` puis `/api/flights/search`. Les départs reconnus incluent Alger (ALG), Oran (ORN), Constantine (CZL) et Annaba (AAE), ainsi que les codes IATA saisis directement. Pour une API hébergée sur un autre domaine, renseigner son URL dans `config.js` (`window.TRIPRADAR_API_BASE`) avant déploiement. Définir `ALLOWED_ORIGIN` côté serveur sur l’origine exacte de l’interface en HTTPS, sans joker. Si l’API ou les identifiants Amadeus sont indisponibles, l’interface n’invente aucun tarif et propose une recherche externe. La recherche de vols porte sur l’aller; les hôtels peuvent renvoyer des offres pour les dates du séjour lorsque l’accès fournisseur le permet.
+**Intégration interface :** les boutons « Vols » tentent maintenant une recherche live via `/api/health` puis `/api/flights/search`. Les départs reconnus incluent Alger (ALG), Oran (ORN), Constantine (CZL) et Annaba (AAE), ainsi que les codes IATA saisis directement. Pour une API hébergée sur un autre domaine, renseigner son URL dans `config.js` (`window.TRIPRADAR_API_BASE`) avant déploiement. Définir `ALLOWED_ORIGIN` côté serveur sur l’origine exacte de l’interface en HTTPS, sans joker. Si l’API ou les identifiants Amadeus sont indisponibles, l’interface n’invente aucun tarif et propose une recherche externe. La recherche de vols prend en charge l’aller simple ou l’aller-retour lorsque `returnDate` est fourni; les hôtels peuvent renvoyer des offres pour les dates du séjour lorsque l’accès fournisseur le permet.
 
 ## Lancer
 
@@ -41,12 +41,12 @@ Ouvrir `index.html` dans un navigateur moderne. Pour installer l’application e
 
 ## Limites connues — transparence
 
-Les prix et durées du catalogue de destinations sont **fictifs, à titre de démonstration**. Les vols et hôtels peuvent afficher des offres live uniquement quand l’API Amadeus est correctement configurée, accessible et autorisée à fournir l’inventaire demandé. Les offres ne garantissent pas la disponibilité au moment de la réservation. L’interface peut calculer un total partiel lorsque les deux recherches live ont réussi : vol aller pour un voyageur + hébergement pour le séjour et une chambre, dans la même devise. Ce total exclut le retour et les frais non fournis; le prototype ne réserve rien.
+Les prix et durées du catalogue de destinations sont **fictifs, à titre de démonstration**. Les vols et hôtels peuvent afficher des offres live uniquement quand l’API Amadeus est correctement configurée, accessible et autorisée à fournir l’inventaire demandé. Les offres ne garantissent pas la disponibilité au moment de la réservation. L’interface peut calculer un total partiel lorsque les deux recherches live ont réussi : vol aller simple ou aller-retour selon les dates saisies + hébergement pour le séjour et une chambre, dans la même devise. Le total reste partiel (frais non fournis, transferts et bagages éventuels); le prototype ne réserve rien.
 
 ## Prochaines étapes vers un produit fiable
 
 1. **Bloquant pour le lancement public :** configurer des identifiants fournisseur actifs, déployer l’API et vérifier la couverture réelle depuis l’Algérie, les conditions d’accès et les droits d’affichage.
-2. Étendre le calcul au retour, aux voyageurs/chambres configurables et aux frais connus, sans mélanger les devises.
+2. Étendre le calcul aux voyageurs/chambres configurables et aux frais connus, sans mélanger les devises.
 3. Ajouter les filtres de durée, bagages, escales, devise, nombre de voyageurs et coût total du séjour.
 4. Tester l’installation PWA, le mode hors ligne, l’accessibilité et les parcours mobiles Android/iOS.
 5. Exécuter les tests de bout en bout sur l’API déployée, confirmer les tarifs et l’inventaire réels, puis valider les parcours Android/iOS.
