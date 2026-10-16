@@ -63,6 +63,46 @@ test("normalizes and price-sorts flight offers from the provider", async () => {
 });
 
 
+test("passes a return date to Amadeus and labels round-trip fares", async () => {
+  const oldId = process.env.AMADEUS_CLIENT_ID;
+  const oldSecret = process.env.AMADEUS_CLIENT_SECRET;
+  process.env.AMADEUS_CLIENT_ID = "test-client";
+  process.env.AMADEUS_CLIENT_SECRET = "test-secret";
+  const calls = [];
+  const fakeFetch = async (url) => {
+    calls.push(String(url));
+    if (String(url).includes("/v1/security/oauth2/token")) {
+      return { ok: true, json: async () => ({ access_token: "round-trip-token", expires_in: 3600 }) };
+    }
+    return {
+      ok: true,
+      json: async () => ({
+        data: [{
+          id: "round-trip",
+          price: { grandTotal: "250.00", currency: "EUR" },
+          itineraries: [
+            { segments: [{ departure: { iataCode: "ALG", at: "2026-11-10T08:00:00" }, arrival: { iataCode: "CDG", at: "2026-11-10T11:00:00" } }] },
+            { segments: [{ departure: { iataCode: "CDG", at: "2026-11-14T12:00:00" }, arrival: { iataCode: "ALG", at: "2026-11-14T15:00:00" } }] }
+          ]
+        }]
+      })
+    };
+  };
+  try {
+    const offers = await searchFlights({
+      origin: "ALG", destination: "CDG", departureDate: "2026-11-10",
+      returnDate: "2026-11-14", adults: 1, currencyCode: "EUR"
+    }, fakeFetch);
+    assert.equal(offers[0].tripType, "round-trip");
+    assert.ok(calls.some((url) => url.includes("returnDate=2026-11-14")));
+  } finally {
+    if (oldId === undefined) delete process.env.AMADEUS_CLIENT_ID;
+    else process.env.AMADEUS_CLIENT_ID = oldId;
+    if (oldSecret === undefined) delete process.env.AMADEUS_CLIENT_SECRET;
+    else process.env.AMADEUS_CLIENT_SECRET = oldSecret;
+  }
+});
+
 test("searches hotel inventory and sorts verified offers by total price", async () => {
   const oldId = process.env.AMADEUS_CLIENT_ID;
   const oldSecret = process.env.AMADEUS_CLIENT_SECRET;
