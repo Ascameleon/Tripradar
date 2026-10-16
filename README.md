@@ -11,6 +11,7 @@
 - Filtre texte et tri par prix croissant/décroissant ou nom.
 - Recherche live optionnelle sur les cartes de vols si l’API Amadeus est configurée; bascule explicite vers Google Flights sinon.
 - Recherche live optionnelle des hôtels via l’API Amadeus, avec repli Booking.com si indisponible.
+- Nombre de voyageurs configurable (1 à 6 adultes), transmis aux recherches de vols, d’hôtels et au comparateur externe.
 - Manifest PWA, icône dédiée et cache du shell pour ouvrir l’application hors ligne après la première visite.
 - Interface responsive mobile/desktop, sans dépendance ni build.
 
