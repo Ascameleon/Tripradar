@@ -49,6 +49,8 @@ test("flight cards attempt live API search and clearly fall back without inventi
   assert.match(html, /Résultats d’hébergements/);
   assert.match(html, /tripEstimatePanel/);
   assert.match(html, /renderTripEstimate/);
+  assert.match(html, /liveFlightCriteriaByDestination\[destinationId\]!==key\|\|liveHotelCriteriaByDestination\[destinationId\]!==key/);
+  assert.match(html, /function currentCriteriaKey\(\)/);
   assert.match(html, /flight\.tripType==="round-trip"/);
   assert.match(html, /returnDate:\$\("dateTo"\)\.value/);
   assert.match(readme, /\/api\/hotels\/search/);
