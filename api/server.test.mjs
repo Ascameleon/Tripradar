@@ -72,7 +72,7 @@ test("HTTP API health, CORS, validation, content type, and missing-provider beha
     method: "POST", headers: { origin, "content-type": "application/json" },
     body: JSON.stringify({ origin: "ALG", destination: "CDG", departureDate: "2027-11-10", adults: 1, currencyCode: "EUR" })
   });
-  assert.equal(noCredentials.status, 502);
+  assert.equal(noCredentials.status, 503);
   assert.deepEqual(await noCredentials.json(), {
     error: "provider_unavailable",
     message: "Aucune offre vérifiée disponible pour le moment."
