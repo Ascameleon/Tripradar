@@ -50,7 +50,9 @@ class TripRadarSmokeTests(unittest.TestCase):
         self.assertIn('sort==="price-desc"', HTML)
         self.assertIn('addEventListener("input",render)', HTML)
         self.assertIn('data-stay=', HTML)
-        self.assertIn('url.searchParams.set("ss",d.city)', HTML)
+        self.assertIn('bookingUrl.searchParams.set("ss",destination.city)', HTML)
+        self.assertIn('bookingUrl.searchParams.set("checkin",from)', HTML)
+        self.assertIn('bookingUrl.searchParams.set("checkout",to)', HTML)
         self.assertIn('https://www.booking.com/searchresults.html', HTML)
 
     def test_installable_offline_app_files_are_wired(self):
