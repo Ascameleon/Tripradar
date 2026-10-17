@@ -102,3 +102,11 @@ test("PWA metadata and offline shell are present", () => {
   assert.ok(worker.includes('"./config.js"'));
   assert.ok(config.includes("TRIPRADAR_API_BASE"));
 });
+
+test("late flight or hotel responses cannot overwrite newer searches or changed criteria", () => {
+  assert.match(html, /let activeLiveRequest=0/);
+  assert.match(html, /const requestId=\+\+activeLiveRequest;const criteriaKey=currentCriteriaKey\(\)/);
+  assert.match(html, /requestId!==activeLiveRequest\|\|currentCriteriaKey\(\)!==criteriaKey\)return/);
+  assert.match(html, /liveFlightCriteriaByDestination\[destination\.id\]=criteriaKey/);
+  assert.match(html, /liveHotelCriteriaByDestination\[destination\.id\]=criteriaKey/);
+});
