@@ -50,6 +50,9 @@ test("HTTP API health, CORS, validation, content type, and missing-provider beha
   const health = await fetch(base + "/api/health", { headers: { origin } });
   assert.equal(health.status, 200);
   assert.equal(health.headers.get("access-control-allow-origin"), origin);
+  assert.equal(health.headers.get("x-content-type-options"), "nosniff");
+  assert.equal(health.headers.get("x-frame-options"), "DENY");
+  assert.equal(health.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
   assert.deepEqual(await health.json(), { ok: true, providerConfigured: false });
 
   const forbidden = await fetch(base + "/api/health", { headers: { origin: "https://attacker.example" } });
