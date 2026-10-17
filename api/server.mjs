@@ -28,6 +28,9 @@ function json(res, status, body, origin = "") {
   const headers = {
     "content-type": "application/json; charset=utf-8",
     "cache-control": "no-store",
+    "x-content-type-options": "nosniff",
+    "x-frame-options": "DENY",
+    "referrer-policy": "strict-origin-when-cross-origin",
     "vary": "Origin",
     "access-control-allow-methods": "GET,POST,OPTIONS",
     "access-control-allow-headers": "content-type"
