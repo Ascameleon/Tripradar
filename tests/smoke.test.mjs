@@ -28,7 +28,7 @@ test("TripRadar uses an international, user-selected origin without an Algeria d
   assert.match(html, /id="origin"[^>]*placeholder="Code IATA \(ex\. JFK, LHR, CDG\)" value=""/);
   assert.match(html, /originText=\$\("origin"\)\.value\.trim\(\);/);
   assert.doesNotMatch(html, /Alger \(ALG\)|\|\|"Alger"/);
-  assert.doesNotMatch(html, /ex\\. ALG|Alger \\(ALG\\)/);
+  assert.doesNotMatch(html, /ex\. ALG|Alger \(ALG\)/);
   assert.doesNotMatch(readme, /Algérie|Alger|Oran|Constantine|Annaba|Sétif|Béjaïa|Tlemcen|Batna|Biskra|Ghardaïa|Tamanrasset|Tindouf|Jijel|Adrar|El Oued/);
   assert.match(html, /london:"LHR"/);
   assert.match(html, /"new york":"JFK"/);
