@@ -86,7 +86,7 @@ async function searchFlightsForDestination(destination){
  const originText=$("origin").value.trim();const origin=resolveAirport(originText);const destinationCode=destinationCodes[destination.id];const date=$("dateFrom").value||isoTomorrow();
  const route="Flights from "+(originText.split("(")[0].trim()||"your airport")+" to "+destination.city+(date?" on "+date:"")+($("dateTo").value?" returning "+$("dateTo").value:"");
  liveFlightCriteriaByDestination[destination.id]=criteriaKey;
- if(!origin){showLivePanel("Ville de départ non reconnue pour la recherche en direct. Utilisez un code IATA (ex. ALG) ou ouvrez la recherche externe.","Recherche externe","Résultats de vols");addFallbackLink(route);$("livePanel").scrollIntoView({behavior:"smooth",block:"nearest"});return}
+ if(!origin){showLivePanel("Départ non reconnu pour la recherche en direct. Saisissez un code IATA (ex. JFK, LHR, CDG) ou ouvrez la recherche externe.","Recherche externe","Résultats de vols");addFallbackLink(route);$("livePanel").scrollIntoView({behavior:"smooth",block:"nearest"});return}
  liveFlightOffersByDestination[destination.id]=[];renderTripEstimate(destination.id);
  showLivePanel("Recherche des tarifs en cours…","Connexion au fournisseur","Résultats de vols");
  const apiBase=(window.TRIPRADAR_API_BASE||location.origin).replace(/\/$/,"");
