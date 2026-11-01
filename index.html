@@ -23,7 +23,7 @@ footer{background:var(--navy);color:#cbd5e1;padding:28px 0;font-size:12px}footer
 <header><div class="wrap"><nav class="nav"><a class="brand" href="#" aria-label="TripRadar accueil"><span class="logo">↗</span>TripRadar</a><div class="navlinks"><a href="#destinations">Explorer</a><a href="#organiser">Organiser</a><a href="#favoris">Mes favoris</a><button class="lang" id="langBtn" type="button" aria-label="Langue">FR⌄</button></div></nav>
 <section class="hero"><div class="eyebrow">Moins chercher. Plus voyager.</div><h1>Le bon voyage.<br><span>Au bon prix.</span></h1><p>Repérez les destinations les plus accessibles, comparez les périodes et gardez vos idées de voyage au même endroit.</p>
 <form class="searchbox" id="searchForm"><div class="fields">
-<div class="field"><label for="origin">Départ de</label><input id="origin" name="origin" placeholder="Alger (ALG)" value="Alger (ALG)"></div>
+<div class="field"><label for="origin">Départ de</label><input id="origin" name="origin" placeholder="Code IATA (ex. JFK, LHR, CDG)" value=""></div>
 <div class="field"><label for="dateFrom">Départ à partir du</label><input id="dateFrom" type="date"></div>
 <div class="field"><label for="dateTo">Retour avant le</label><input id="dateTo" type="date"></div>
 <div class="field"><label for="budget">Budget vol max.</label><select id="budget"><option value="all">Sans limite</option><option value="150">150 €</option><option value="250">250 €</option><option value="400">400 €</option><option value="600">600 €</option></select></div>
@@ -61,12 +61,12 @@ else extra='<circle cx="210" cy="34" r="18" fill="#fff3cb" opacity=".9"/><path d
 return '<svg viewBox="0 0 260 180" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="g'+d.id+'" x1="0" y1="0" x2="1" y2="1"><stop stop-color="'+g[0]+'"/><stop offset="1" stop-color="'+g[1]+'"/></linearGradient></defs><rect width="260" height="180" fill="url(#g'+d.id+')"/>'+extra+'</svg>'}
 const $=id=>document.getElementById(id);
 let favorites=new Set();try{favorites=new Set(JSON.parse(localStorage.getItem("tripradar-favorites")||"[]"))}catch(e){}
-const airportCodes={alger:"ALG",algiers:"ALG",alg:"ALG",oran:"ORN",orn:"ORN",constantine:"CZL",czl:"CZL",annaba:"AAE",aae:"AAE",sétif:"QSF",setif:"QSF",qsf:"QSF",béjaïa:"BJA",bejaia:"BJA",bja:"BJA",tlemcen:"TLM",tlm:"TLM",batna:"BLJ",blj:"BLJ",biskra:"BSK",bsk:"BSK",ghardaïa:"GHA",ghardaia:"GHA",gha:"GHA",tamanrasset:"TMR",tmr:"TMR",tindouf:"TIN",tin:"TIN",jijel:"GJL",gjl:"GJL",adrar:"AZR",azr:"AZR","el oued":"ELU",elu:"ELU",tunis:"TUN",tun:"TUN",paris:"PAR",cdg:"CDG",istanbul:"IST",ist:"IST",barcelone:"BCN",barcelona:"BCN",rome:"FCO",lisbonne:"LIS",lisbon:"LIS",athènes:"ATH",athens:"ATH",madrid:"MAD",dubaï:"DXB",dubai:"DXB"};
+const airportCodes={london:"LHR","new york":"JFK",nyc:"JFK",amsterdam:"AMS",frankfurt:"FRA",singapore:"SIN",tokyo:"NRT",toronto:"YYZ","los angeles":"LAX",zurich:"ZRH",doha:"DOH",cairo:"CAI",riyadh:"RUH",mumbai:"BOM",tunis:"TUN",tun:"TUN",paris:"PAR",cdg:"CDG",istanbul:"IST",ist:"IST",barcelone:"BCN",barcelona:"BCN",rome:"FCO",lisbonne:"LIS",lisbon:"LIS",athènes:"ATH",athens:"ATH",madrid:"MAD",dubaï:"DXB",dubai:"DXB"};
 const destinationCodes={tunis:"TUN",istanbul:"IST",barcelone:"BCN",rome:"FCO",lisbonne:"LIS",paris:"PAR",athenes:"ATH",madrid:"MAD",dubai:"DXB"};
 function resolveAirport(value){const raw=value.split("(")[0].trim().toLocaleLowerCase("fr");if(/^[a-z]{3}$/i.test(raw))return raw.toUpperCase();return airportCodes[raw]||null}
 function showLivePanel(message,source="",heading="Résultats vérifiés"){const panel=$("livePanel");panel.hidden=false;$("liveHeading").textContent=heading;$("liveMessage").textContent=message;$("liveSource").textContent=source;$("liveOffers").innerHTML=""}
 const liveFlightOffersByDestination={};const liveHotelOffersByDestination={};const liveFlightCriteriaByDestination={};const liveHotelCriteriaByDestination={};let activeLiveRequest=0;
-function currentCriteriaKey(){return JSON.stringify({origin:$("origin").value.trim()||"Alger",from:$("dateFrom").value,to:$("dateTo").value,adults:Number($("adults").value||1),rooms:Number($("rooms").value||1)})}
+function currentCriteriaKey(){return JSON.stringify({origin:$("origin").value.trim(),from:$("dateFrom").value,to:$("dateTo").value,adults:Number($("adults").value||1),rooms:Number($("rooms").value||1)})}
 const hotelCityCodes={tunis:"TUN",istanbul:"IST",barcelone:"BCN",rome:"ROM",lisbonne:"LIS",paris:"PAR",athenes:"ATH",madrid:"MAD",dubai:"DXB"};
 function renderTripEstimate(destinationId){
  const key=currentCriteriaKey();if(liveFlightCriteriaByDestination[destinationId]!==key||liveHotelCriteriaByDestination[destinationId]!==key){$("tripEstimatePanel").hidden=true;$("tripEstimateContent").textContent="";return}
@@ -83,8 +83,8 @@ function renderTripEstimate(destinationId){
 }
 async function searchFlightsForDestination(destination){
  const requestId=++activeLiveRequest;const criteriaKey=currentCriteriaKey();
- const originText=$("origin").value.trim()||"Alger";const origin=resolveAirport(originText);const destinationCode=destinationCodes[destination.id];const date=$("dateFrom").value||isoTomorrow();
- const route="Flights from "+originText.split("(")[0].trim()+" to "+destination.city+(date?" on "+date:"")+($("dateTo").value?" returning "+$("dateTo").value:"");
+ const originText=$("origin").value.trim();const origin=resolveAirport(originText);const destinationCode=destinationCodes[destination.id];const date=$("dateFrom").value||isoTomorrow();
+ const route="Flights from "+(originText.split("(")[0].trim()||"your airport")+" to "+destination.city+(date?" on "+date:"")+($("dateTo").value?" returning "+$("dateTo").value:"");
  liveFlightCriteriaByDestination[destination.id]=criteriaKey;
  if(!origin){showLivePanel("Ville de départ non reconnue pour la recherche en direct. Utilisez un code IATA (ex. ALG) ou ouvrez la recherche externe.","Recherche externe","Résultats de vols");addFallbackLink(route);$("livePanel").scrollIntoView({behavior:"smooth",block:"nearest"});return}
  liveFlightOffersByDestination[destination.id]=[];renderTripEstimate(destination.id);
