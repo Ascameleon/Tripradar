@@ -5,6 +5,7 @@
 ## Prototype MVP
 
 - Recherche par aéroport/ville de départ, fenêtre de dates et budget maximal.
+- Départ choisi par l’utilisateur, sans pays ni aéroport préselectionné; tout code IATA à trois lettres est accepté.
 - Destinations de démonstration triées du prix le plus bas au plus élevé.
 - Favoris persistants dans le navigateur.
 - Vérification basique de cohérence des dates.
@@ -28,7 +29,7 @@ Une API Node.js sans dépendances est disponible dans `api/`. Elle utilise l'API
 
 Tests locaux : `npm test` (ou `node --test tests/*.mjs api/*.test.mjs`). La suite couvre les validations vols/hôtels et aller-retour, la normalisation et le tri des offres, le rendu du front-end, ainsi qu’un test d’intégration HTTP qui démarre réellement l’API et vérifie la santé, CORS, les types de contenu, les paramètres invalides, l’absence de clés fournisseur et les routes inconnues. La CI GitHub Actions vérifie aussi la configuration Docker Compose et construit l’image du conteneur à chaque push sur `main`. Les tests ne nécessitent aucune clé fournisseur.
 
-**Intégration interface :** les boutons « Vols » tentent maintenant une recherche live via `/api/health` puis `/api/flights/search`. Les départs reconnus incluent Alger (ALG), Oran (ORN), Constantine (CZL), Annaba (AAE), Sétif (QSF), Béjaïa (BJA), Tlemcen (TLM), Batna (BLJ), Biskra (BSK), Ghardaïa (GHA), Tamanrasset (TMR), Tindouf (TIN), Jijel (GJL), Adrar (AZR) et El Oued (ELU), ainsi que les codes IATA saisis directement. Pour une API hébergée sur un autre domaine, renseigner son URL dans `config.js` (`window.TRIPRADAR_API_BASE`) avant déploiement. Définir `ALLOWED_ORIGIN` côté serveur sur l’origine exacte de l’interface en HTTPS, sans joker. Si l’API ou les identifiants Amadeus sont indisponibles, l’interface n’invente aucun tarif et propose une recherche externe. La recherche de vols prend en charge l’aller simple ou l’aller-retour lorsque `returnDate` est fourni; les hôtels peuvent renvoyer des offres pour les dates du séjour lorsque l’accès fournisseur le permet.
+**Intégration interface :** les boutons « Vols » tentent maintenant une recherche live via `/api/health` puis `/api/flights/search`. L’origine est saisie explicitement par l’utilisateur; les codes IATA internationaux à trois lettres sont acceptés, avec quelques alias de grandes villes (Londres, New York, Amsterdam, Paris, Istanbul, Barcelone, Rome, Lisbonne, Madrid et Dubaï). Aucun pays ni aéroport n’est présélectionné. Pour une API hébergée sur un autre domaine, renseigner son URL dans `config.js` (`window.TRIPRADAR_API_BASE`) avant déploiement. Définir `ALLOWED_ORIGIN` côté serveur sur l’origine exacte de l’interface en HTTPS, sans joker. Si l’API ou les identifiants Amadeus sont indisponibles, l’interface n’invente aucun tarif et propose une recherche externe. La recherche de vols prend en charge l’aller simple ou l’aller-retour lorsque `returnDate` est fourni; les hôtels peuvent renvoyer des offres pour les dates du séjour lorsque l’accès fournisseur le permet.
 
 ## Lancer
 
@@ -46,7 +47,7 @@ Les prix et durées du catalogue de destinations sont **fictifs, à titre de dé
 
 ## Prochaines étapes vers un produit fiable
 
-1. **Bloquant pour le lancement public :** configurer des identifiants fournisseur actifs, déployer l’API et vérifier la couverture réelle depuis l’Algérie, les conditions d’accès et les droits d’affichage.
+1. **Bloquant pour le lancement public :** configurer des identifiants fournisseur actifs, déployer l’API et vérifier la couverture réelle dans les marchés internationaux visés, les conditions d’accès et les droits d’affichage.
 2. Étendre le calcul aux frais connus, sans mélanger les devises.
 3. Ajouter les filtres de durée, bagages, escales, devise, nombre de voyageurs et coût total du séjour.
 4. Tester l’installation PWA, le mode hors ligne, l’accessibilité et les parcours mobiles Android/iOS.

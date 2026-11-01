@@ -24,6 +24,29 @@ test("TripRadar exposes the core search, filter, and favorites controls", () => 
   }
 });
 
+test("TripRadar uses an international, user-selected origin without an Algeria default", () => {
+  assert.match(html, /id="origin"[^>]*placeholder="Code IATA \(ex\. JFK, LHR, CDG\)" value=""/);
+  assert.match(html, /originText=\$\("origin"\)\.value\.trim\(\);/);
+  assert.doesNotMatch(html, /Alger \(ALG\)|\|\|"Alger"/);
+  assert.doesNotMatch(html, /ex\. ALG|Alger \(ALG\)/);
+  assert.doesNotMatch(readme, /Algérie|Alger|Oran|Constantine|Annaba|Sétif|Béjaïa|Tlemcen|Batna|Biskra|Ghardaïa|Tamanrasset|Tindouf|Jijel|Adrar|El Oued/);
+  assert.match(html, /london:"LHR"/);
+  assert.match(html, /"new york":"JFK"/);
+});
+
+test("international IATA codes and city aliases resolve without Algeria city aliases", () => {
+  const start = html.indexOf("const airportCodes=");
+  const end = html.indexOf("\nfunction showLivePanel", start);
+  assert.ok(start >= 0 && end > start, "airport resolver source must exist");
+  const sandbox = {};
+  vm.runInNewContext(html.slice(start, end), sandbox);
+  assert.equal(sandbox.resolveAirport("JFK"), "JFK");
+  assert.equal(sandbox.resolveAirport("LHR"), "LHR");
+  assert.equal(sandbox.resolveAirport("London"), "LHR");
+  assert.equal(sandbox.resolveAirport("New York"), "JFK");
+  assert.equal(sandbox.resolveAirport("Alger"), null);
+});
+
 test("search validation rejects empty origin and return dates on or before departure", () => {
   assert.match(html, /Indiquez votre ville ou aéroport de départ/);
   assert.match(html, /\$\("dateTo"\)\.value\s*<=\s*\$\("dateFrom"\)\.value/);
@@ -67,9 +90,9 @@ test("flight cards attempt live API search and clearly fall back without inventi
   assert.match(html, /returnDate:\$\("dateTo"\)\.value/);
   assert.match(readme, /\/api\/hotels\/search/);
   assert.match(html, /Aucun prix fictif n’est affiché/);
-  assert.match(html, /sétif:"QSF"/);
-  assert.match(html, /bejaia:"BJA"/);
-  assert.match(html, /tlemcen:"TLM"/);
+  assert.match(html, /london:"LHR"/);
+  assert.match(html, /amsterdam:"AMS"/);
+  assert.match(html, /"new york":"JFK"/);
   assert.match(html, /Comparer les vols sur Google Flights/);
   assert.match(readme, /window\.TRIPRADAR_API_BASE/);
 });
@@ -95,7 +118,7 @@ test("API applies bounded request, header, and keep-alive timeouts", async () =>
 test("PWA metadata and offline shell are present", () => {
   assert.equal(manifest.short_name, "TripRadar");
   assert.equal(manifest.display, "standalone");
-  assert.match(worker, /tripradar-static-v8/);
+  assert.match(worker, /tripradar-static-v9/);
   assert.match(worker, /addAll\(APP_FILES\)/);
   assert.match(html, /serviceWorker\.register/);
   assert.ok(html.includes('<script src="./config.js"></script>'));
