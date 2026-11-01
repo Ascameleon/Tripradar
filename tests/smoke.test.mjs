@@ -34,6 +34,19 @@ test("TripRadar uses an international, user-selected origin without an Algeria d
   assert.match(html, /"new york":"JFK"/);
 });
 
+test("international IATA codes and city aliases resolve without Algeria city aliases", () => {
+  const start = html.indexOf("const airportCodes=");
+  const end = html.indexOf("\nfunction showLivePanel", start);
+  assert.ok(start >= 0 && end > start, "airport resolver source must exist");
+  const sandbox = {};
+  vm.runInNewContext(html.slice(start, end), sandbox);
+  assert.equal(sandbox.resolveAirport("JFK"), "JFK");
+  assert.equal(sandbox.resolveAirport("LHR"), "LHR");
+  assert.equal(sandbox.resolveAirport("London"), "LHR");
+  assert.equal(sandbox.resolveAirport("New York"), "JFK");
+  assert.equal(sandbox.resolveAirport("Alger"), null);
+});
+
 test("search validation rejects empty origin and return dates on or before departure", () => {
   assert.match(html, /Indiquez votre ville ou aéroport de départ/);
   assert.match(html, /\$\("dateTo"\)\.value\s*<=\s*\$\("dateFrom"\)\.value/);
