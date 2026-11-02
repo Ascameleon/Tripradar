@@ -118,4 +118,4 @@ server.headersTimeout = 10_000;
 server.requestTimeout = 15_000;
 server.keepAliveTimeout = 5_000;
 
-server.listen(port, "0.0.0.0", () => console.log(`TripRadar API listening on ${port}`));
+server.listen(port, "0.0.0.0", () => console.log(`TripBoost API listening on ${port}`));
