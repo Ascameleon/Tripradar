@@ -18,13 +18,13 @@ test("inline application JavaScript parses without syntax errors", () => {
   assert.doesNotThrow(() => new vm.Script(script));
 });
 
-test("TripRadar exposes the core search, filter, and favorites controls", () => {
+test("TripBoost exposes the core search, filter, and favorites controls", () => {
   for (const id of ["searchForm", "origin", "dateFrom", "dateTo", "budget", "adults", "rooms", "destinationFilter", "sortBy", "results", "savedList", "favCount"]) {
     assert.match(html, new RegExp('id="' + id + '"'), "missing #" + id);
   }
 });
 
-test("TripRadar uses an international, user-selected origin without an Algeria default", () => {
+test("TripBoost uses an international, user-selected origin without an Algeria default", () => {
   assert.match(html, /id="origin"[^>]*placeholder="Code IATA \(ex\. JFK, LHR, CDG\)" value=""/);
   assert.match(html, /originText=\$\("origin"\)\.value\.trim\(\);/);
   assert.doesNotMatch(html, /Alger \(ALG\)|\|\|"Alger"/);
@@ -94,7 +94,7 @@ test("flight cards attempt live API search and clearly fall back without inventi
   assert.match(html, /amsterdam:"AMS"/);
   assert.match(html, /"new york":"JFK"/);
   assert.match(html, /Comparer les vols sur Google Flights/);
-  assert.match(readme, /window\.TRIPRADAR_API_BASE/);
+  assert.match(readme, /window\.TRIPBOOST_API_BASE/);
 });
 
 test("external fallback links use safe new-tab attributes", () => {
@@ -104,7 +104,7 @@ test("external fallback links use safe new-tab attributes", () => {
 });
 
 test("favorites persist locally and recover safely if storage is unavailable", () => {
-  assert.match(html, /localStorage\.setItem\("tripradar-favorites"/);
+  assert.match(html, /localStorage\.setItem\("tripboost-favorites"/);
   assert.match(html, /try\{favorites=new Set\(JSON\.parse\(localStorage\.getItem/);
 });
 
@@ -115,15 +115,20 @@ test("API applies bounded request, header, and keep-alive timeouts", async () =>
   assert.match(server, /server\.keepAliveTimeout\s*=\s*5_000/);
 });
 
-test("PWA metadata and offline shell are present", () => {
-  assert.equal(manifest.short_name, "TripRadar");
+test("TripBoost map-first discovery and PWA metadata are present", () => {
+  assert.match(html, /id="radarMap"/);
+  assert.match(html, /\/api\/discovery\/search/);
+  assert.match(html, /searchAllDestinations/);
+  assert.match(html, /Baisse non confirmée/);
+  assert.match(readme, /carte mondiale est l’interface principale/);
+  assert.equal(manifest.short_name, "TripBoost");
   assert.equal(manifest.display, "standalone");
-  assert.match(worker, /tripradar-static-v9/);
+  assert.match(worker, /tripboost-static-v1/);
   assert.match(worker, /addAll\(APP_FILES\)/);
   assert.match(html, /serviceWorker\.register/);
   assert.ok(html.includes('<script src="./config.js"></script>'));
   assert.ok(worker.includes('"./config.js"'));
-  assert.ok(config.includes("TRIPRADAR_API_BASE"));
+  assert.ok(config.includes("TRIPBOOST_API_BASE"));
 });
 
 test("late flight or hotel responses cannot overwrite newer searches or changed criteria", () => {
