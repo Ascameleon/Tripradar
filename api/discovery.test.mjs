@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { searchDiscovery } from "./discovery.mjs";
 import { assessOpportunity } from "./opportunity.mjs";
+import { validateDiscoverySearch } from "./validation.mjs";
 
 test("discovery searches destinations in parallel and reports partial source failures", async () => {
   const calls = [];
@@ -53,4 +54,20 @@ test("baseline comparisons reject mismatched currency, itinerary, or thin sample
   assert.equal(assessOpportunity(offer, {
     verified: true, comparisonKey: "route-date-cabin", currency: "EUR", medianPrice: 180, sampleCount: 3
   }).status, "unverified");
+});
+
+test("discovery validation accepts a bounded international destination list and rejects duplicates", () => {
+  const now = new Date("2026-11-02T12:00:00Z");
+  const valid = validateDiscoverySearch({
+    origin: "LHR", destinations: ["CDG", "FCO", "MAD"], departureDate: "2026-11-10",
+    adults: 2, currencyCode: "EUR"
+  }, now);
+  assert.deepEqual(valid.destinations, ["CDG", "FCO", "MAD"]);
+  assert.equal(validateDiscoverySearch({
+    origin: "LHR", destinations: ["CDG", "CDG"], departureDate: "2026-11-10"
+  }, now), null);
+  assert.equal(validateDiscoverySearch({
+    origin: "LHR", destinations: Array.from({ length: 13 }, (_, i) => "A" + String(i).padStart(2, "0")),
+    departureDate: "2026-11-10"
+  }, now), null);
 });
