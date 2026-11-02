@@ -1,9 +1,9 @@
 {
-  "name": "tripradar",
+  "name": "tripboost",
   "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "TripRadar lightweight travel comparison PWA and optional Amadeus API",
+  "description": "TripBoost global travel-deal discovery PWA and multi-source search API",
   "engines": {
     "node": ">=20.6"
   },

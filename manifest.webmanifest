@@ -1,7 +1,7 @@
 {
-  "name": "TripRadar — Comparateur de voyages",
-  "short_name": "TripRadar",
-  "description": "Comparez vos idées de voyage, filtrez les destinations et sauvegardez vos favoris.",
+  "name": "TripBoost — Radar mondial des bonnes affaires",
+  "short_name": "TripBoost",
+  "description": "Découvrez les tarifs de voyage exceptionnellement avantageux et les départs de dernière minute.",
   "lang": "fr",
   "start_url": "./",
   "scope": "./",
@@ -9,6 +9,11 @@
   "background_color": "#f5f7fb",
   "theme_color": "#0b132b",
   "icons": [
-    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
   ]
 }

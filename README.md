@@ -1,6 +1,28 @@
-# TripRadar
+# TripBoost
 
-**Promesse :** repérer des destinations accessibles selon le prix du billet, garder des dates flexibles, puis organiser la comparaison des hébergements.
+**Promesse :** découvrir où partir en repérant les tarifs de voyage anormalement bas par rapport aux prix habituellement observés, les promotions et les départs de dernière minute. La carte mondiale est l'interface principale; TripBoost compare et redirige vers le fournisseur, sans vendre ni réserver.
+
+## Concept produit — carte mondiale des opportunités
+
+- Le voyageur saisit son point de départ et ses dates ou sa fenêtre de départ.
+- Le moteur lance des recherches en parallèle sur les destinations affichées sur la carte.
+- Les connecteurs normalisent les résultats de sources autorisées (API, flux publics ou liens de recherche autorisés).
+- La carte affiche destination, prix, compagnie/fournisseur, heure de vérification et lien source lorsqu'il est fourni.
+- Les prix sont classés par devise et conditions comparables; aucun taux de change ni tarif manquant n'est inventé.
+- Une offre n'est qualifiée d'« exceptionnelle » que si elle est comparée à une référence historique vérifiée pour le même trajet, les mêmes dates/périodes, la même cabine, le même nombre de voyageurs et la même devise.
+- Les offres sans historique comparable restent « baisse non confirmée » : un prix bas isolé n'est pas présenté comme une promotion prouvée.
+- TripBoost ne prend aucun paiement et ne gère aucune réservation.
+
+## État de la première évolution TripBoost
+
+- Dépôt historique conservé; évolution sur la branche `tripboost-concept-evolution`.
+- Interface map-first ajoutée avec marqueurs de destinations; les marqueurs de démonstration sont explicitement signalés comme fictifs.
+- Endpoint `POST /api/discovery/search` ajouté : recherche en parallèle sur plusieurs destinations avec agrégation des statuts de sources.
+- Architecture d'orchestration prête à recevoir plusieurs adaptateurs indépendants.
+- Amadeus reste le seul adaptateur fournisseur effectivement connecté dans cette version; aucune connexion réelle à Skyscanner, KAYAK ou Google Flights n'est prétendue.
+- Classification des promotions ajoutée, avec exigence d'une référence historique vérifiée et d'au moins cinq observations comparables.
+- Aucun prix réel n'est disponible tant qu'un fournisseur autorisé n'est pas configuré et testé.
+
 
 ## Prototype MVP
 
@@ -29,7 +51,7 @@ Une API Node.js sans dépendances est disponible dans `api/`. Elle utilise l'API
 
 Tests locaux : `npm test` (ou `node --test tests/*.mjs api/*.test.mjs`). La suite couvre les validations vols/hôtels et aller-retour, la normalisation et le tri des offres, le rendu du front-end, ainsi qu’un test d’intégration HTTP qui démarre réellement l’API et vérifie la santé, CORS, les types de contenu, les paramètres invalides, l’absence de clés fournisseur et les routes inconnues. La CI GitHub Actions vérifie aussi la configuration Docker Compose et construit l’image du conteneur à chaque push sur `main`. Les tests ne nécessitent aucune clé fournisseur.
 
-**Intégration interface :** les boutons « Vols » tentent maintenant une recherche live via `/api/health` puis `/api/flights/search`. L’origine est saisie explicitement par l’utilisateur; les codes IATA internationaux à trois lettres sont acceptés, avec quelques alias de grandes villes (Londres, New York, Amsterdam, Paris, Istanbul, Barcelone, Rome, Lisbonne, Madrid et Dubaï). Aucun pays ni aéroport n’est présélectionné. Pour une API hébergée sur un autre domaine, renseigner son URL dans `config.js` (`window.TRIPRADAR_API_BASE`) avant déploiement. Définir `ALLOWED_ORIGIN` côté serveur sur l’origine exacte de l’interface en HTTPS, sans joker. Si l’API ou les identifiants Amadeus sont indisponibles, l’interface n’invente aucun tarif et propose une recherche externe. La recherche de vols prend en charge l’aller simple ou l’aller-retour lorsque `returnDate` est fourni; les hôtels peuvent renvoyer des offres pour les dates du séjour lorsque l’accès fournisseur le permet.
+**Intégration interface :** les boutons « Vols » tentent maintenant une recherche live via `/api/health` puis `/api/flights/search`. L’origine est saisie explicitement par l’utilisateur; les codes IATA internationaux à trois lettres sont acceptés, avec quelques alias de grandes villes (Londres, New York, Amsterdam, Paris, Istanbul, Barcelone, Rome, Lisbonne, Madrid et Dubaï). Aucun pays ni aéroport n’est présélectionné. Pour une API hébergée sur un autre domaine, renseigner son URL dans `config.js` (`window.TRIPBOOST_API_BASE`) avant déploiement. Définir `ALLOWED_ORIGIN` côté serveur sur l’origine exacte de l’interface en HTTPS, sans joker. Si l’API ou les identifiants Amadeus sont indisponibles, l’interface n’invente aucun tarif et propose une recherche externe. La recherche de vols prend en charge l’aller simple ou l’aller-retour lorsque `returnDate` est fourni; les hôtels peuvent renvoyer des offres pour les dates du séjour lorsque l’accès fournisseur le permet.
 
 ## Lancer
 
@@ -46,6 +68,14 @@ Ouvrir `index.html` dans un navigateur moderne. Pour installer l’application e
 Les prix et durées du catalogue de destinations sont **fictifs, à titre de démonstration**. Les vols et hôtels peuvent afficher des offres live uniquement quand l’API Amadeus est correctement configurée, accessible et autorisée à fournir l’inventaire demandé. Les offres ne garantissent pas la disponibilité au moment de la réservation. L’interface peut calculer un total partiel lorsque les deux recherches live ont réussi : vol aller simple ou aller-retour selon les dates saisies + hébergement pour le séjour et une chambre, dans la même devise. Le total reste partiel (frais non fournis, transferts et bagages éventuels); le prototype ne réserve rien.
 
 ## Prochaines étapes vers un produit fiable
+
+1. Ajouter et tester d'autres adaptateurs autorisés (API, flux ou liens profonds) sans dépendance à un fournisseur unique.
+2. Ajouter un stockage d'historique des prix et un calcul de référence médiane par itinéraire et conditions comparables.
+3. Remplacer les marqueurs illustratifs par des marqueurs alimentés exclusivement par les offres live.
+4. Ajouter une recherche par fenêtre de dates et un détecteur de dernière minute.
+5. Ajouter les liens profonds des fournisseurs et recontrôler l'offre avant redirection.
+
+
 
 1. **Bloquant pour le lancement public :** configurer des identifiants fournisseur actifs, déployer l’API et vérifier la couverture réelle dans les marchés internationaux visés, les conditions d’accès et les droits d’affichage.
 2. Étendre le calcul aux frais connus, sans mélanger les devises.

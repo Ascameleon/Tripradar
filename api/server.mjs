@@ -1,6 +1,7 @@
 import http from "node:http";
 import { searchFlights, searchHotels } from "./provider.mjs";
-import { validateSearch, validateHotelSearch } from "./validation.mjs";
+import { validateSearch, validateHotelSearch, validateDiscoverySearch } from "./validation.mjs";
+import { searchDiscovery } from "./discovery.mjs";
 
 const port = Number(process.env.PORT || 3000);
 const allowedOrigin = process.env.ALLOWED_ORIGIN || "http://localhost:3000";
@@ -63,7 +64,8 @@ const server = http.createServer(async (req, res) => {
   }
   const isFlightSearch = url.pathname === "/api/flights/search";
   const isHotelSearch = url.pathname === "/api/hotels/search";
-  if ((!isFlightSearch && !isHotelSearch) || req.method !== "POST") {
+  const isDiscoverySearch = url.pathname === "/api/discovery/search";
+  if ((!isFlightSearch && !isHotelSearch && !isDiscoverySearch) || req.method !== "POST") {
     return json(res, 404, { error: "not_found" }, origin);
   }
 
@@ -93,10 +95,14 @@ const server = http.createServer(async (req, res) => {
     return json(res, 400, { error: "invalid_json" }, origin);
   }
 
-  const search = isFlightSearch ? validateSearch(input) : validateHotelSearch(input);
+  const search = isFlightSearch ? validateSearch(input) : isHotelSearch ? validateHotelSearch(input) : validateDiscoverySearch(input);
   if (!search) return json(res, 400, { error: "invalid_search_parameters" }, origin);
 
   try {
+    if (isDiscoverySearch) {
+      const result = await searchDiscovery(search, [{ id: "amadeus", name: "Amadeus", search: searchFlights }]);
+      return json(res, 200, result, origin);
+    }
     const offers = isFlightSearch ? await searchFlights(search) : await searchHotels(search);
     return json(res, 200, { source: "Amadeus", checkedAt: new Date().toISOString(), offers }, origin);
   } catch (error) {
@@ -112,4 +118,4 @@ server.headersTimeout = 10_000;
 server.requestTimeout = 15_000;
 server.keepAliveTimeout = 5_000;
 
-server.listen(port, "0.0.0.0", () => console.log(`TripRadar API listening on ${port}`));
+server.listen(port, "0.0.0.0", () => console.log(`TripBoost API listening on ${port}`));
