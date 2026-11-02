@@ -1,4 +1,4 @@
-name: TripRadar quality checks
+name: TripBoost quality checks
 on:
   push:
     branches: [main]
@@ -25,6 +25,6 @@ jobs:
       - name: Validate Docker Compose configuration
         run: docker compose config --quiet
       - name: Build API container
-        run: docker build -t tripradar-api:test .
+        run: docker build -t tripboost-api:test .
       - name: Run API and frontend regression tests
         run: npm test
