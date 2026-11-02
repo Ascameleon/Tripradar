@@ -1,9 +1,9 @@
 services:
-  tripradar-api:
+  tripboost-api:
     build:
       context: .
       dockerfile: Dockerfile
-    image: tripradar-api:local
+    image: tripboost-api:local
     restart: unless-stopped
     ports:
       - "${PORT:-3000}:3000"
