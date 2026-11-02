@@ -70,7 +70,7 @@ test("the result summary follows the selected sort mode", () => {
 
 test("demo fares are never represented as verified live prices", () => {
   assert.match(html, /prix affichés sont des exemples de démonstration/);
-  assert.match(html, /Aperçu de démonstration/);
+  assert.match(html, /Carte illustrative · prix démo/);
   assert.match(readme, /Les prix et durées du catalogue de destinations sont/);
 });
 
