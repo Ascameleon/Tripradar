@@ -120,7 +120,7 @@ test("TripBoost map-first discovery and PWA metadata are present", () => {
   assert.match(html, /\/api\/discovery\/search/);
   assert.match(html, /searchAllDestinations/);
   assert.match(html, /Baisse non confirmée/);
-  assert.match(readme, /carte mondiale est l’interface principale/);
+  assert.match(readme, /carte mondiale est l.interface principale/);
   assert.equal(manifest.short_name, "TripBoost");
   assert.equal(manifest.display, "standalone");
   assert.match(worker, /tripboost-static-v1/);
