@@ -43,3 +43,16 @@ export function validateHotelSearch(input, now = new Date()) {
       !Number.isInteger(adults) || adults < 1 || adults > 9 || !Number.isInteger(roomQuantity) || roomQuantity < 1 || roomQuantity > 4 || !/^[A-Z]{3}$/.test(currencyCode)) return null;
   return { cityCode, checkInDate, checkOutDate, adults, roomQuantity, currencyCode };
 }
+
+export function validateDiscoverySearch(input, now = new Date()) {
+  if (!input || typeof input !== "object" || Array.isArray(input) ||
+      !Array.isArray(input.destinations) || input.destinations.length < 1 || input.destinations.length > 12) return null;
+  const destinations = [...new Set(input.destinations.map((value) => String(value || "").trim().toUpperCase()))];
+  if (destinations.length !== input.destinations.length ||
+      destinations.some((code) => !/^[A-Z]{3}$/.test(code))) return null;
+  const origin = String(input.origin || "").trim().toUpperCase();
+  if (destinations.includes(origin)) return null;
+  const first = validateSearch({ ...input, destination: destinations[0] }, now);
+  if (!first) return null;
+  return { ...first, destinations };
+}
