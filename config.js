@@ -1,3 +1,4 @@
-// Optional: set this to the deployed TripRadar API origin when it differs from the website origin.
-// Example: window.TRIPRADAR_API_BASE = "https://api.example.com";
-window.TRIPRADAR_API_BASE = "";
+// TripBoost API origin. Same-origin is used when this is empty.
+// Keep the legacy name as a compatibility alias for older cached front-end files.
+window.TRIPBOOST_API_BASE = window.TRIPBOOST_API_BASE || window.TRIPRADAR_API_BASE || "";
+window.TRIPRADAR_API_BASE = window.TRIPBOOST_API_BASE;
