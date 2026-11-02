@@ -1,4 +1,4 @@
-# TripRadar — Live inventory integration plan
+# TripBoost — Live inventory integration plan
 
 ## Decision
 
@@ -6,7 +6,7 @@ Keep the current static application as a lightweight, zero-infrastructure protot
 
 ## Candidate provider path
 
-- **Flights:** evaluate Amadeus Self-Service Flight Offers Search first for a narrow MVP; its official documentation describes itinerary search and price confirmation. Confirm account eligibility, production access, route coverage from Algeria, usage limits, and commercial terms before selecting it.
+- **Flights:** evaluate Amadeus Self-Service Flight Offers Search first for a narrow MVP; its official documentation describes itinerary search and price confirmation. Confirm account eligibility, production access, route coverage in selected international markets, usage limits, and commercial terms before selecting it.
 - **Alternative / combined flights and stays:** evaluate Duffel's Flights and Stays APIs if its commercial onboarding, inventory, and terms fit the product. Verify actual destination coverage and live-mode access before committing.
 - **Hotels:** assess the chosen provider's hotel inventory separately. Do not assume a flight API's hotel endpoints provide broad or bookable coverage.
 
@@ -14,6 +14,13 @@ Official documentation:
 - Amadeus flight API guide: https://developers.amadeus.com/self-service/category/flights
 - Amadeus hotel API guide: https://developers.amadeus.com/self-service/category/hotels
 - Duffel API documentation: https://duffel.com/docs
+
+## TripBoost discovery architecture
+
+- The discovery endpoint fans out searches across destination codes concurrently and returns partial results even when one destination/provider fails.
+- Provider adapters are independent; Amadeus is the only adapter connected in the current branch. Add other sources only through authorised APIs, feeds or permitted search links.
+- The opportunity classifier requires a verified historical median, matching comparison key/currency and at least five comparable observations. Otherwise the offer is labelled as an unconfirmed decrease.
+- The interactive map is the primary discovery surface; demonstration markers are clearly distinguished from real provider results.
 
 ## Minimal architecture
 
