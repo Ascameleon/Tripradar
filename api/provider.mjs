@@ -1,15 +1,38 @@
+import { createHash } from "node:crypto";
+
 const BASE = process.env.AMADEUS_BASE_URL || "https://test.api.amadeus.com";
-let tokenCache = { value: null, expiresAt: 0 };
+let tokenCache = { key: null, value: null, expiresAt: 0 };
 
 async function getToken(fetchImpl = fetch) {
   const id = process.env.AMADEUS_CLIENT_ID;
   const secret = process.env.AMADEUS_CLIENT_SECRET;
   if (!id || !secret) { const error = new Error("Amadeus credentials are not configured"); error.status = 503; throw error; }
-  if (tokenCache.value && tokenCache.expiresAt > Date.now() + 30_000) return tokenCache.value;
+  const cacheKey = createHash("sha256")
+    .update(BASE)
+    .update("\0")
+    .update(id)
+    .update("\0")
+    .update(secret)
+    .digest("hex");
+  if (tokenCache.key === cacheKey && tokenCache.value && tokenCache.expiresAt > Date.now() + 30_000) {
+    return tokenCache.value;
+  }
   const response = await fetchImpl(`${BASE}/v1/security/oauth2/token`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ grant_type: "client_credentials", client_id: id, client_secret: secret }), signal: AbortSignal.timeout(8000) });
   if (!response.ok) { const error = new Error("Provider authentication failed"); error.status = response.status; throw error; }
   const data = await response.json();
-  tokenCache = { value: data.access_token, expiresAt: Date.now() + Math.max(0, Number(data.expires_in || 0) - 60) * 1000 };
+  const accessToken = typeof data.access_token === "string" ? data.access_token.trim() : "";
+  if (!accessToken) {
+    const error = new Error("Provider authentication returned no access token");
+    error.status = 502;
+    throw error;
+  }
+  const expiresIn = Number(data.expires_in);
+  const ttlSeconds = Number.isFinite(expiresIn) ? Math.max(0, expiresIn - 60) : 0;
+  tokenCache = {
+    key: cacheKey,
+    value: accessToken,
+    expiresAt: Date.now() + ttlSeconds * 1000
+  };
   return tokenCache.value;
 }
 
