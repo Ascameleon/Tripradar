@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 const BASE = process.env.AMADEUS_BASE_URL || "https://test.api.amadeus.com";
 let tokenCache = { key: null, value: null, expiresAt: 0 };
+let tokenRequest = null;
 
 async function getToken(fetchImpl = fetch) {
   const id = process.env.AMADEUS_CLIENT_ID;
@@ -17,23 +18,33 @@ async function getToken(fetchImpl = fetch) {
   if (tokenCache.key === cacheKey && tokenCache.value && tokenCache.expiresAt > Date.now() + 30_000) {
     return tokenCache.value;
   }
-  const response = await fetchImpl(`${BASE}/v1/security/oauth2/token`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ grant_type: "client_credentials", client_id: id, client_secret: secret }), signal: AbortSignal.timeout(8000) });
-  if (!response.ok) { const error = new Error("Provider authentication failed"); error.status = response.status; throw error; }
-  const data = await response.json();
-  const accessToken = typeof data.access_token === "string" ? data.access_token.trim() : "";
-  if (!accessToken) {
-    const error = new Error("Provider authentication returned no access token");
-    error.status = 502;
-    throw error;
+  if (tokenRequest?.key === cacheKey) return tokenRequest.promise;
+
+  const pending = (async () => {
+    const response = await fetchImpl(`${BASE}/v1/security/oauth2/token`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ grant_type: "client_credentials", client_id: id, client_secret: secret }), signal: AbortSignal.timeout(8000) });
+    if (!response.ok) { const error = new Error("Provider authentication failed"); error.status = response.status; throw error; }
+    const data = await response.json();
+    const accessToken = typeof data.access_token === "string" ? data.access_token.trim() : "";
+    if (!accessToken) {
+      const error = new Error("Provider authentication returned no access token");
+      error.status = 502;
+      throw error;
+    }
+    const expiresIn = Number(data.expires_in);
+    const ttlSeconds = Number.isFinite(expiresIn) ? Math.max(0, expiresIn - 60) : 0;
+    tokenCache = {
+      key: cacheKey,
+      value: accessToken,
+      expiresAt: Date.now() + ttlSeconds * 1000
+    };
+    return accessToken;
+  })();
+  tokenRequest = { key: cacheKey, promise: pending };
+  try {
+    return await pending;
+  } finally {
+    if (tokenRequest?.key === cacheKey && tokenRequest.promise === pending) tokenRequest = null;
   }
-  const expiresIn = Number(data.expires_in);
-  const ttlSeconds = Number.isFinite(expiresIn) ? Math.max(0, expiresIn - 60) : 0;
-  tokenCache = {
-    key: cacheKey,
-    value: accessToken,
-    expiresAt: Date.now() + ttlSeconds * 1000
-  };
-  return tokenCache.value;
 }
 
 export async function searchFlights(input, fetchImpl = fetch) {
