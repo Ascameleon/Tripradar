@@ -103,3 +103,38 @@ test("rejects invalid hotel payloads, dates, city codes, guests, and currency", 
   assert.equal(validateHotelSearch({ ...hotel, roomQuantity: 3 }, today).roomQuantity, 3);
   assert.equal(validateHotelSearch({ ...hotel, currencyCode: "EURO" }, today), null);
 });
+
+
+test("validates bounded multi-destination discovery input without coercion", async () => {
+  const { validateDiscoverySearch } = await import("./validation.mjs");
+  const input = {
+    origin: "alg",
+    destinations: ["cdg", "ist", "jfk"],
+    departureDate: "2026-11-10",
+    adults: 2,
+    currencyCode: "eur"
+  };
+  assert.deepEqual(validateDiscoverySearch(input, today), {
+    origin: "ALG",
+    destinations: ["CDG", "IST", "JFK"],
+    departureDate: "2026-11-10",
+    adults: 2,
+    currencyCode: "EUR"
+  });
+});
+
+test("rejects duplicate, invalid, excessive, or origin-equal discovery destinations", async () => {
+  const { validateDiscoverySearch } = await import("./validation.mjs");
+  const input = { origin: "ALG", destinations: ["CDG"], departureDate: "2026-11-10" };
+  assert.equal(validateDiscoverySearch(null, today), null);
+  assert.equal(validateDiscoverySearch({ ...input, destinations: [] }, today), null);
+  assert.equal(validateDiscoverySearch({ ...input, destinations: Array(10).fill("CDG") }, today), null);
+  assert.equal(validateDiscoverySearch({ ...input, destinations: ["CDG", "cdg"] }, today), null);
+  assert.equal(validateDiscoverySearch({ ...input, destinations: ["CDG", "Istanbul"] }, today), null);
+  assert.equal(validateDiscoverySearch({ ...input, destinations: ["ALG"] }, today), null);
+  assert.equal(validateDiscoverySearch({ ...input, destinations: ["CDG", 12] }, today), null);
+  assert.equal(validateDiscoverySearch({ ...input, adults: "2" }, today), null);
+  assert.equal(validateDiscoverySearch({ ...input, adults: 7 }, today), null);
+  assert.equal(validateDiscoverySearch({ ...input, departureDate: "2026-02-30" }, today), null);
+  assert.equal(validateDiscoverySearch({ ...input, returnDate: "2026-11-10" }, today), null);
+});
