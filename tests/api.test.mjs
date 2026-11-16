@@ -83,7 +83,7 @@ test("HTTP API enforces health, origin, payload, and provider error contracts", 
 
   const missingProvider = await fetch(`${base}/api/flights/search`, {
     method: "POST", headers: { origin, "content-type": "application/json" },
-    body: JSON.stringify({ origin: "ALG", destination: "CDG", departureDate: "2026-11-10", adults: 1, currencyCode: "EUR" })
+    body: JSON.stringify({ origin: "ALG", destination: "CDG", departureDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10), adults: 1, currencyCode: "EUR" })
   });
   assert.equal(missingProvider.status, 503);
   assert.deepEqual(await missingProvider.json(), {

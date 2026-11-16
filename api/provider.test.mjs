@@ -153,3 +153,50 @@ test("searches hotel inventory and sorts verified offers by total price", async 
     else process.env.AMADEUS_CLIENT_SECRET = oldSecret;
   }
 });
+
+
+test("refreshes the cached token when Amadeus credentials rotate", async () => {
+  const oldId = process.env.AMADEUS_CLIENT_ID;
+  const oldSecret = process.env.AMADEUS_CLIENT_SECRET;
+  const clientId = "tripboost-credential-rotation-regression";
+  const tokenRequests = [];
+  const flightTokens = [];
+  const fakeFetch = async (url, options = {}) => {
+    if (String(url).includes("/v1/security/oauth2/token")) {
+      const form = new URLSearchParams(options.body);
+      tokenRequests.push(form.get("client_secret"));
+      return {
+        ok: true,
+        json: async () => ({
+          access_token: `rotation-token-${tokenRequests.length}`,
+          expires_in: 3600
+        })
+      };
+    }
+    flightTokens.push(options.headers?.authorization);
+    return { ok: true, json: async () => ({ data: [] }) };
+  };
+
+  try {
+    process.env.AMADEUS_CLIENT_ID = clientId;
+    process.env.AMADEUS_CLIENT_SECRET = "rotation-secret-one";
+    await searchFlights({
+      origin: "JFK", destination: "LHR", departureDate: "2026-12-10",
+      adults: 1, currencyCode: "EUR"
+    }, fakeFetch);
+
+    process.env.AMADEUS_CLIENT_SECRET = "rotation-secret-two";
+    await searchFlights({
+      origin: "JFK", destination: "LHR", departureDate: "2026-12-10",
+      adults: 1, currencyCode: "EUR"
+    }, fakeFetch);
+
+    assert.deepEqual(tokenRequests, ["rotation-secret-one", "rotation-secret-two"]);
+    assert.deepEqual(flightTokens, ["Bearer rotation-token-1", "Bearer rotation-token-2"]);
+  } finally {
+    if (oldId === undefined) delete process.env.AMADEUS_CLIENT_ID;
+    else process.env.AMADEUS_CLIENT_ID = oldId;
+    if (oldSecret === undefined) delete process.env.AMADEUS_CLIENT_SECRET;
+    else process.env.AMADEUS_CLIENT_SECRET = oldSecret;
+  }
+});
