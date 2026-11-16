@@ -16,6 +16,23 @@ test("rejects malformed JSON values and missing or malformed airport codes", () 
   assert.equal(validateSearch({ ...valid, destination: "ALG" }, today), null);
 });
 
+test("rejects non-string flight identifiers, dates, and currency values without coercion", () => {
+  for (const [field, value] of [
+    ["origin", ["ALG"]],
+    ["origin", { code: "ALG" }],
+    ["destination", ["CDG"]],
+    ["destination", true],
+    ["departureDate", ["2026-11-10"]],
+    ["departureDate", 20261110],
+    ["returnDate", ["2026-11-14"]],
+    ["returnDate", { date: "2026-11-14" }],
+    ["currencyCode", ["EUR"]],
+    ["currencyCode", { code: "EUR" }]
+  ]) {
+    assert.equal(validateSearch({ ...valid, [field]: value }, today), null, field);
+  }
+});
+
 test("rejects impossible dates and dates in the past", () => {
   assert.equal(validateSearch({ ...valid, departureDate: "2026-02-30" }, today), null);
   assert.equal(validateSearch({ ...valid, departureDate: "2026-10-14" }, today), null);
@@ -48,6 +65,22 @@ test("accepts a valid hotel search and normalizes city and currency", () => {
   }, today), {
     cityCode: "IST", checkInDate: "2026-11-10", checkOutDate: "2026-11-14", adults: 2, roomQuantity: 1, currencyCode: "EUR"
   });
+});
+
+test("rejects non-string hotel codes, dates, and currency values without coercion", () => {
+  const hotel = { cityCode: "IST", checkInDate: "2026-11-10", checkOutDate: "2026-11-14", adults: 2, currencyCode: "EUR" };
+  for (const [field, value] of [
+    ["cityCode", ["IST"]],
+    ["cityCode", { code: "IST" }],
+    ["checkInDate", ["2026-11-10"]],
+    ["checkInDate", 20261110],
+    ["checkOutDate", ["2026-11-14"]],
+    ["checkOutDate", true],
+    ["currencyCode", ["EUR"]],
+    ["currencyCode", { code: "EUR" }]
+  ]) {
+    assert.equal(validateHotelSearch({ ...hotel, [field]: value }, today), null, field);
+  }
 });
 
 test("rejects invalid hotel payloads, dates, city codes, guests, and currency", () => {
