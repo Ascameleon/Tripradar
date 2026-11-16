@@ -55,7 +55,8 @@ const server = http.createServer(async (req, res) => {
     return res.end();
   }
 
-  const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+  // Route parsing must not trust the untrusted Host header; only the request target is needed here.
+  const url = new URL(req.url || "/", "http://localhost");
   if (url.pathname === "/api/health" && req.method === "GET") {
     return json(res, 200, {
       ok: true,

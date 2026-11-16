@@ -2,6 +2,26 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
+import { request as httpRequest } from "node:http";
+
+async function getWithHost(port, path, origin, host) {
+  return new Promise((resolve, reject) => {
+    const request = httpRequest({
+      hostname: "127.0.0.1",
+      port,
+      path,
+      method: "GET",
+      headers: { origin, host }
+    }, (response) => {
+      let body = "";
+      response.setEncoding("utf8");
+      response.on("data", (chunk) => { body += chunk; });
+      response.on("end", () => resolve({ status: response.statusCode, headers: response.headers, body }));
+    });
+    request.once("error", reject);
+    request.end();
+  });
+}
 
 async function freePort() {
   const probe = createServer();
@@ -54,6 +74,10 @@ test("HTTP API health, CORS, validation, content type, and missing-provider beha
   assert.equal(health.headers.get("x-frame-options"), "DENY");
   assert.equal(health.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
   assert.deepEqual(await health.json(), { ok: true, providerConfigured: false });
+
+  const malformedHost = await getWithHost(port, "/api/health", origin, "localhost:99999");
+  assert.equal(malformedHost.status, 200, "an untrusted Host header must not break request-target parsing");
+  assert.deepEqual(JSON.parse(malformedHost.body), { ok: true, providerConfigured: false });
 
   const forbidden = await fetch(base + "/api/health", { headers: { origin: "https://attacker.example" } });
   assert.equal(forbidden.status, 403);
