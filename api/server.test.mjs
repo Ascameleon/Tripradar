@@ -81,7 +81,7 @@ test("HTTP API health, CORS, validation, content type, and missing-provider beha
     message: "Aucune offre vérifiée disponible pour le moment."
   });
 
-  for (let index = 0; index < 27; index += 1) {
+  for (let index = 0; index < 29; index += 1) {
     const response = await fetch(base + "/api/flights/search", {
       method: "POST", headers: { origin, "content-type": "application/json" },
       body: JSON.stringify({ origin: "ALG", destination: "CDG", departureDate: "2027-11-10", adults: 1, currencyCode: "EUR" })
