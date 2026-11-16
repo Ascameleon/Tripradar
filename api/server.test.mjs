@@ -123,7 +123,7 @@ test("global discovery endpoint is disabled by default and does not call a suppl
   child.stdout.on("data", (chunk) => { output += chunk; });
   child.stderr.on("data", (chunk) => { output += chunk; });
   t.after(() => { if (child.exitCode === null) child.kill("SIGTERM"); });
-  const base = \`http://127.0.0.1:\${port}\`;
+  const base = "http://127.0.0.1:" + port;
   let ready = false;
   for (let attempt = 0; attempt < 60; attempt += 1) {
     if (child.exitCode !== null) throw new Error("API exited before ready: " + output);
