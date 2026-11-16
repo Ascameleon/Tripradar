@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 
 const BASE = process.env.AMADEUS_BASE_URL || "https://test.api.amadeus.com";
-let tokenCache = { key: null, value: null, expiresAt: 0 };
-let tokenRequest = null;
+const tokenCache = new Map();
+const tokenRequests = new Map();
 
 async function getToken(fetchImpl = fetch) {
   const id = process.env.AMADEUS_CLIENT_ID;
@@ -15,10 +15,19 @@ async function getToken(fetchImpl = fetch) {
     .update("\0")
     .update(secret)
     .digest("hex");
-  if (tokenCache.key === cacheKey && tokenCache.value && tokenCache.expiresAt > Date.now() + 30_000) {
-    return tokenCache.value;
+  const now = Date.now();
+  for (const [key, cached] of tokenCache) {
+    if (cached.expiresAt <= now + 30_000) tokenCache.delete(key);
   }
-  if (tokenRequest?.key === cacheKey) return tokenRequest.promise;
+  const cached = tokenCache.get(cacheKey);
+  if (cached && cached.expiresAt > now + 30_000) {
+    tokenCache.delete(cacheKey);
+    tokenCache.set(cacheKey, cached);
+    return cached.value;
+  }
+
+  const inFlight = tokenRequests.get(cacheKey);
+  if (inFlight) return inFlight;
 
   const pending = (async () => {
     const response = await fetchImpl(`${BASE}/v1/security/oauth2/token`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ grant_type: "client_credentials", client_id: id, client_secret: secret }), signal: AbortSignal.timeout(8000) });
@@ -32,18 +41,20 @@ async function getToken(fetchImpl = fetch) {
     }
     const expiresIn = Number(data.expires_in);
     const ttlSeconds = Number.isFinite(expiresIn) ? Math.max(0, expiresIn - 60) : 0;
-    tokenCache = {
-      key: cacheKey,
+    tokenCache.set(cacheKey, {
       value: accessToken,
       expiresAt: Date.now() + ttlSeconds * 1000
-    };
+    });
+    while (tokenCache.size > 8) {
+      tokenCache.delete(tokenCache.keys().next().value);
+    }
     return accessToken;
   })();
-  tokenRequest = { key: cacheKey, promise: pending };
+  tokenRequests.set(cacheKey, pending);
   try {
     return await pending;
   } finally {
-    if (tokenRequest?.key === cacheKey && tokenRequest.promise === pending) tokenRequest = null;
+    if (tokenRequests.get(cacheKey) === pending) tokenRequests.delete(cacheKey);
   }
 }
 

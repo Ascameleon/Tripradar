@@ -269,3 +269,76 @@ test("coalesces concurrent Amadeus authentication requests", async () => {
     else process.env.AMADEUS_CLIENT_SECRET = oldSecret;
   }
 });
+
+
+test("keeps concurrent Amadeus token requests isolated by credential key", async () => {
+  const oldId = process.env.AMADEUS_CLIENT_ID;
+  const oldSecret = process.env.AMADEUS_CLIENT_SECRET;
+  const clientId = "tripboost-multi-key-singleflight-regression";
+  let releaseA;
+  let releaseB;
+  let startedA;
+  let startedB;
+  const gateA = new Promise((resolve) => { releaseA = resolve; });
+  const gateB = new Promise((resolve) => { releaseB = resolve; });
+  const aStarted = new Promise((resolve) => { startedA = resolve; });
+  const bStarted = new Promise((resolve) => { startedB = resolve; });
+  let tokenRequestsA = 0;
+  let tokenRequestsB = 0;
+  let flightRequests = 0;
+  const fakeFetch = async (url, options = {}) => {
+    if (String(url).includes("/v1/security/oauth2/token")) {
+      const secret = new URLSearchParams(options.body).get("client_secret");
+      if (secret === "secret-a") {
+        tokenRequestsA += 1;
+        startedA();
+        await gateA;
+        return { ok: true, json: async () => ({ access_token: "token-a", expires_in: 3600 }) };
+      }
+      if (secret === "secret-b") {
+        tokenRequestsB += 1;
+        startedB();
+        await gateB;
+        return { ok: true, json: async () => ({ access_token: "token-b", expires_in: 3600 }) };
+      }
+      throw new Error("Unexpected test credential");
+    }
+    flightRequests += 1;
+    return { ok: true, json: async () => ({ data: [] }) };
+  };
+  const input = {
+    origin: "JFK", destination: "LHR", departureDate: "2026-12-10",
+    adults: 1, currencyCode: "EUR"
+  };
+
+  try {
+    process.env.AMADEUS_CLIENT_ID = clientId;
+    process.env.AMADEUS_CLIENT_SECRET = "secret-a";
+    const firstA = searchFlights(input, fakeFetch);
+    await aStarted;
+
+    process.env.AMADEUS_CLIENT_SECRET = "secret-b";
+    const requestB = searchFlights(input, fakeFetch);
+    await bStarted;
+    releaseB();
+    await requestB;
+
+    process.env.AMADEUS_CLIENT_SECRET = "secret-a";
+    const secondA = searchFlights(input, fakeFetch);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(tokenRequestsA, 1, "the second A request must join the still-pending A request");
+    releaseA();
+    await Promise.all([firstA, secondA]);
+
+    assert.equal(tokenRequestsA, 1);
+    assert.equal(tokenRequestsB, 1);
+    assert.equal(flightRequests, 3, "each flight search must still run independently");
+  } finally {
+    releaseA();
+    releaseB();
+    if (oldId === undefined) delete process.env.AMADEUS_CLIENT_ID;
+    else process.env.AMADEUS_CLIENT_ID = oldId;
+    if (oldSecret === undefined) delete process.env.AMADEUS_CLIENT_SECRET;
+    else process.env.AMADEUS_CLIENT_SECRET = oldSecret;
+  }
+});
