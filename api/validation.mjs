@@ -14,10 +14,10 @@ export function validateSearch(input, now = new Date()) {
   const returnDate = input.returnDate ?? "";
   const adults = input.adults ?? 1;
   const currencyCode = (input.currencyCode ?? "EUR").toUpperCase();
-  const isoDate = /^\\d{4}-\\d{2}-\\d{2}$/;
+  const isoDate = /^\d{4}-\d{2}-\d{2}$/;
   const parseDate = (value) => {
     if (!isoDate.test(value)) return null;
-    const parsed = new Date(`${value}T00:00:00Z`);
+    const parsed = new Date(value + "T00:00:00Z");
     return Number.isNaN(parsed.valueOf()) || parsed.toISOString().slice(0, 10) !== value ? null : parsed;
   };
   const departure = parseDate(departureDate);
@@ -46,10 +46,10 @@ export function validateHotelSearch(input, now = new Date()) {
   const adults = input.adults ?? 1;
   const roomQuantity = input.roomQuantity ?? 1;
   const currencyCode = (input.currencyCode ?? "EUR").toUpperCase();
-  const isoDate = /^\\d{4}-\\d{2}-\\d{2}$/;
+  const isoDate = /^\d{4}-\d{2}-\d{2}$/;
   const parseDate = (value) => {
     if (!isoDate.test(value)) return null;
-    const parsed = new Date(`${value}T00:00:00Z`);
+    const parsed = new Date(value + "T00:00:00Z");
     return Number.isNaN(parsed.valueOf()) || parsed.toISOString().slice(0, 10) !== value ? null : parsed;
   };
   const checkIn = parseDate(checkInDate);
