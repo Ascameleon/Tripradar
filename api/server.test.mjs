@@ -102,3 +102,52 @@ test("HTTP API health, CORS, validation, content type, and missing-provider beha
   const unknown = await fetch(base + "/api/not-a-route", { headers: { origin } });
   assert.equal(unknown.status, 404);
 });
+
+
+test("global discovery endpoint is disabled by default and does not call a supplier", async (t) => {
+  const port = await freePort();
+  const origin = "https://tripradar.example";
+  const child = spawn(process.execPath, ["api/server.mjs"], {
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      PORT: String(port),
+      ALLOWED_ORIGIN: origin,
+      AMADEUS_CLIENT_ID: "test-id",
+      AMADEUS_CLIENT_SECRET: "test-secret",
+      TRIPBOOST_DISCOVERY_ENABLED: ""
+    },
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  let output = "";
+  child.stdout.on("data", (chunk) => { output += chunk; });
+  child.stderr.on("data", (chunk) => { output += chunk; });
+  t.after(() => { if (child.exitCode === null) child.kill("SIGTERM"); });
+  const base = \`http://127.0.0.1:\${port}\`;
+  let ready = false;
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    if (child.exitCode !== null) throw new Error("API exited before ready: " + output);
+    try {
+      const response = await fetch(base + "/api/health", { signal: AbortSignal.timeout(300) });
+      if (response.ok) { ready = true; break; }
+    } catch {}
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  assert.equal(ready, true);
+  const response = await fetch(base + "/api/discovery/search", {
+    method: "POST",
+    headers: { origin, "content-type": "application/json" },
+    body: JSON.stringify({
+      origin: "ALG",
+      destinations: ["CDG", "IST", "JFK"],
+      departureDate: "2027-11-10",
+      adults: 1,
+      currencyCode: "EUR"
+    })
+  });
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), {
+    error: "discovery_disabled",
+    message: "La recherche mondiale est désactivée. Activez explicitement TRIPBOOST_DISCOVERY_ENABLED=true après validation des coûts fournisseur."
+  });
+});
