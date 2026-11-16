@@ -18,7 +18,7 @@ class StructureParser(HTMLParser):
         if tag == "form":
             self.forms += 1
 
-class TripRadarSmokeTests(unittest.TestCase):
+class TripBoostSmokeTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.parser = StructureParser()
@@ -34,7 +34,7 @@ class TripRadarSmokeTests(unittest.TestCase):
     def test_search_form_and_script_exist(self):
         self.assertEqual(self.parser.forms, 1)
         self.assertIn('addEventListener("submit"', HTML)
-        self.assertIn('localStorage.setItem("tripradar-favorites"', HTML)
+        self.assertIn('localStorage.setItem("tripboost-favorites"', HTML)
 
     def test_prices_are_explicitly_marked_as_demo(self):
         self.assertIn("prix affichés sont des exemples de démonstration", HTML)
