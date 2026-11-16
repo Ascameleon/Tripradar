@@ -1,13 +1,14 @@
 import http from "node:http";
 import { searchFlights, searchHotels } from "./provider.mjs";
-import { validateSearch, validateHotelSearch } from "./validation.mjs";
+import { searchDiscovery } from "./discovery.mjs";
+import { validateSearch, validateHotelSearch, validateDiscoverySearch } from "./validation.mjs";
 
 const port = Number(process.env.PORT || 3000);
 const allowedOrigin = process.env.ALLOWED_ORIGIN || "http://localhost:3000";
 const maxBodyBytes = 20_000;
 const requestBuckets = new Map();
 
-function rateLimited(ip) {
+function rateLimited(ip, limit = 30) {
   const now = Date.now();
   if (requestBuckets.size > 2_000) {
     for (const [key, entry] of requestBuckets) {
@@ -21,7 +22,7 @@ function rateLimited(ip) {
     return false;
   }
   bucket.count += 1;
-  return bucket.count > 30;
+  return bucket.count > limit;
 }
 
 function json(res, status, body, origin = "") {
@@ -63,12 +64,14 @@ const server = http.createServer(async (req, res) => {
   }
   const isFlightSearch = url.pathname === "/api/flights/search";
   const isHotelSearch = url.pathname === "/api/hotels/search";
-  if ((!isFlightSearch && !isHotelSearch) || req.method !== "POST") {
+  const isDiscoverySearch = url.pathname === "/api/discovery/search";
+  if ((!isFlightSearch && !isHotelSearch && !isDiscoverySearch) || req.method !== "POST") {
     return json(res, 404, { error: "not_found" }, origin);
   }
 
   const ip = String(req.socket.remoteAddress || "unknown");
-  if (rateLimited(ip)) {
+  const rateKey = isDiscoverySearch ? ip + ":discovery" : ip + ":search";
+  if (rateLimited(rateKey, isDiscoverySearch ? 1 : 30)) {
     return json(res, 429, { error: "rate_limited", message: "Trop de recherches. Réessayez dans une minute." }, origin);
   }
 
@@ -93,10 +96,38 @@ const server = http.createServer(async (req, res) => {
     return json(res, 400, { error: "invalid_json" }, origin);
   }
 
-  const search = isFlightSearch ? validateSearch(input) : validateHotelSearch(input);
+  const search = isFlightSearch
+    ? validateSearch(input)
+    : isHotelSearch
+      ? validateHotelSearch(input)
+      : validateDiscoverySearch(input);
   if (!search) return json(res, 400, { error: "invalid_search_parameters" }, origin);
 
   try {
+    if (isDiscoverySearch) {
+      // A map-wide search can fan out to nine supplier requests. Keep it disabled
+      // unless an operator explicitly opts in after checking provider terms/costs.
+      if (process.env.TRIPBOOST_DISCOVERY_ENABLED !== "true") {
+        return json(res, 503, {
+          error: "discovery_disabled",
+          message: "La recherche mondiale est désactivée. Activez explicitement TRIPBOOST_DISCOVERY_ENABLED=true après validation des coûts fournisseur."
+        }, origin);
+      }
+      if (!process.env.AMADEUS_CLIENT_ID || !process.env.AMADEUS_CLIENT_SECRET) {
+        return json(res, 503, {
+          error: "provider_unavailable",
+          message: "Aucune source tarifaire vérifiée n'est configurée."
+        }, origin);
+      }
+      const result = await searchDiscovery(search, searchFlights, { maxConcurrency: 2 });
+      if (!result.searchedDestinations.length) {
+        return json(res, 503, {
+          error: "provider_unavailable",
+          message: "Aucune destination n'a pu être vérifiée auprès du fournisseur."
+        }, origin);
+      }
+      return json(res, 200, { source: "Amadeus", checkedAt: new Date().toISOString(), ...result }, origin);
+    }
     const offers = isFlightSearch ? await searchFlights(search) : await searchHotels(search);
     return json(res, 200, { source: "Amadeus", checkedAt: new Date().toISOString(), offers }, origin);
   } catch (error) {
