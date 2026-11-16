@@ -69,12 +69,6 @@ const server = http.createServer(async (req, res) => {
     return json(res, 404, { error: "not_found" }, origin);
   }
 
-  const ip = String(req.socket.remoteAddress || "unknown");
-  const rateKey = isDiscoverySearch ? ip + ":discovery" : ip + ":search";
-  if (rateLimited(rateKey, isDiscoverySearch ? 1 : 30)) {
-    return json(res, 429, { error: "rate_limited", message: "Trop de recherches. Réessayez dans une minute." }, origin);
-  }
-
   const contentType = String(req.headers["content-type"] || "").split(";")[0].trim().toLowerCase();
   if (contentType !== "application/json") return json(res, 415, { error: "content_type_must_be_json" }, origin);
   const declaredLength = Number(req.headers["content-length"] || 0);
@@ -102,6 +96,15 @@ const server = http.createServer(async (req, res) => {
       ? validateHotelSearch(input)
       : validateDiscoverySearch(input);
   if (!search) return json(res, 400, { error: "invalid_search_parameters" }, origin);
+
+  // Only well-formed searches consume the provider quota. Invalid content types,
+  // malformed JSON and rejected parameters must not let one client exhaust the
+  // valid-search allowance for everyone sharing its network address.
+  const ip = String(req.socket.remoteAddress || "unknown");
+  const rateKey = isDiscoverySearch ? ip + ":discovery" : ip + ":search";
+  if (rateLimited(rateKey, isDiscoverySearch ? 1 : 30)) {
+    return json(res, 429, { error: "rate_limited", message: "Trop de recherches. Réessayez dans une minute." }, origin);
+  }
 
   try {
     if (isDiscoverySearch) {
