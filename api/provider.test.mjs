@@ -236,3 +236,36 @@ test("rejects zero and negative flight fares while keeping positive offers", asy
     else process.env.AMADEUS_CLIENT_SECRET = oldSecret;
   }
 });
+
+
+test("coalesces concurrent Amadeus authentication requests", async () => {
+  const oldId = process.env.AMADEUS_CLIENT_ID;
+  const oldSecret = process.env.AMADEUS_CLIENT_SECRET;
+  process.env.AMADEUS_CLIENT_ID = "tripboost-singleflight-regression";
+  process.env.AMADEUS_CLIENT_SECRET = "singleflight-test-secret";
+  let tokenRequests = 0;
+  let flightRequests = 0;
+  const fakeFetch = async (url) => {
+    if (String(url).includes("/v1/security/oauth2/token")) {
+      tokenRequests += 1;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      return { ok: true, json: async () => ({ access_token: "singleflight-token", expires_in: 3600 }) };
+    }
+    flightRequests += 1;
+    return { ok: true, json: async () => ({ data: [] }) };
+  };
+  try {
+    const input = {
+      origin: "JFK", destination: "LHR", departureDate: "2026-12-10",
+      adults: 1, currencyCode: "EUR"
+    };
+    await Promise.all(Array.from({ length: 8 }, () => searchFlights(input, fakeFetch)));
+    assert.equal(tokenRequests, 1, "parallel searches with the same credentials should share one token request");
+    assert.equal(flightRequests, 8, "each search must still issue its own flight request");
+  } finally {
+    if (oldId === undefined) delete process.env.AMADEUS_CLIENT_ID;
+    else process.env.AMADEUS_CLIENT_ID = oldId;
+    if (oldSecret === undefined) delete process.env.AMADEUS_CLIENT_SECRET;
+    else process.env.AMADEUS_CLIENT_SECRET = oldSecret;
+  }
+});
