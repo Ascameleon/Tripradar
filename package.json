@@ -5,7 +5,7 @@
   "type": "module",
   "description": "TripBoost map-first travel opportunity discovery PWA and optional Amadeus API",
   "engines": {
-    "node": ">=20.6"
+    "node": ">=24.0.0"
   },
   "scripts": {
     "start": "node api/server.mjs",
