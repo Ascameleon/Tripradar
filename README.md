@@ -42,10 +42,10 @@
 
 Une API Node.js sans dépendances est disponible dans `api/`. Elle utilise l'API Amadeus côté serveur : les secrets ne sont jamais placés dans le navigateur.
 
-1. Installer Node.js 20 ou plus récent.
+1. Installer Node.js 24 ou plus récent.
 2. Copier `.env.example` vers `.env` et renseigner `AMADEUS_CLIENT_ID` et `AMADEUS_CLIENT_SECRET` depuis votre compte fournisseur. Ne jamais committer `.env`.
 3. Définir `ALLOWED_ORIGIN` sur l’origine exacte de l’interface en production; l’API rejette les autres origines navigateur.
-4. En local, lancer `node --env-file=.env api/server.mjs` (Node.js 20.6+). En production, fournir les variables comme secrets d’environnement de la plateforme.
+4. En local, lancer `node --env-file=.env api/server.mjs` (Node.js 24+). En production, fournir les variables comme secrets d’environnement de la plateforme.
 5. Vérifier `GET /api/health`, puis tester `POST /api/flights/search` (`origin`, `destination`, `departureDate`, `returnDate` facultatif, `adults`, `currencyCode`) et `POST /api/hotels/search` (`cityCode`, `checkInDate`, `checkOutDate`, `adults`, `roomQuantity` facultatif (1 à 4 chambres), `currencyCode`).
 6. Utiliser l'environnement de test jusqu'à validation du compte et de l'accès production.
 
