@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 const BASE = process.env.AMADEUS_BASE_URL || "https://test.api.amadeus.com";
-const tokenCache = new Map();
+let tokenCache = { key: null, value: null, expiresAt: 0 };
 const tokenRequests = new Map();
 
 async function getToken(fetchImpl = fetch) {
@@ -16,14 +16,8 @@ async function getToken(fetchImpl = fetch) {
     .update(secret)
     .digest("hex");
   const now = Date.now();
-  for (const [key, cached] of tokenCache) {
-    if (cached.expiresAt <= now + 30_000) tokenCache.delete(key);
-  }
-  const cached = tokenCache.get(cacheKey);
-  if (cached && cached.expiresAt > now + 30_000) {
-    tokenCache.delete(cacheKey);
-    tokenCache.set(cacheKey, cached);
-    return cached.value;
+  if (tokenCache.key === cacheKey && tokenCache.value && tokenCache.expiresAt > now + 30_000) {
+    return tokenCache.value;
   }
 
   const inFlight = tokenRequests.get(cacheKey);
@@ -41,13 +35,11 @@ async function getToken(fetchImpl = fetch) {
     }
     const expiresIn = Number(data.expires_in);
     const ttlSeconds = Number.isFinite(expiresIn) ? Math.max(0, expiresIn - 60) : 0;
-    tokenCache.set(cacheKey, {
+    tokenCache = {
+      key: cacheKey,
       value: accessToken,
       expiresAt: Date.now() + ttlSeconds * 1000
-    });
-    while (tokenCache.size > 8) {
-      tokenCache.delete(tokenCache.keys().next().value);
-    }
+    };
     return accessToken;
   })();
   tokenRequests.set(cacheKey, pending);
