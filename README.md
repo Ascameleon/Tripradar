@@ -1,6 +1,28 @@
-# TripRadar
+# TripBoost
 
-**Promesse :** repérer des destinations accessibles selon le prix du billet, garder des dates flexibles, puis organiser la comparaison des hébergements.
+**Promesse :** découvrir où partir en repérant les tarifs de voyage anormalement bas par rapport aux prix habituellement observés, les promotions et les départs de dernière minute. La carte mondiale est l'interface principale; TripBoost compare et redirige vers le fournisseur, sans vendre ni réserver.
+
+## Concept produit — carte mondiale des opportunités
+
+- Le voyageur saisit son point de départ et ses dates ou sa fenêtre de départ.
+- Le moteur lance des recherches en parallèle sur les destinations affichées sur la carte.
+- Les connecteurs normalisent les résultats de sources autorisées (API, flux publics ou liens de recherche autorisés).
+- La carte affiche destination, prix, compagnie/fournisseur, heure de vérification et lien source lorsqu'il est fourni.
+- Les prix sont classés par devise et conditions comparables; aucun taux de change ni tarif manquant n'est inventé.
+- Une offre n'est qualifiée d'« exceptionnelle » que si elle est comparée à une référence historique vérifiée pour le même trajet, les mêmes dates/périodes, la même cabine, le même nombre de voyageurs et la même devise.
+- Les offres sans historique comparable restent « baisse non confirmée » : un prix bas isolé n'est pas présenté comme une promotion prouvée.
+- TripBoost ne prend aucun paiement et ne gère aucune réservation.
+
+## État de la première évolution TripBoost
+
+- Interface map-first consolidée avec le backend de recherche actuel; l'historique Git est conservé.
+- Interface map-first ajoutée avec marqueurs de destinations; les marqueurs de démonstration sont explicitement signalés comme fictifs.
+- Endpoint `POST /api/discovery/search` ajouté : recherche en parallèle sur plusieurs destinations avec agrégation des statuts de sources.
+- Recherche multi-destinations bornée (jusqu'à 9 destinations, concurrence maximale de 2 appels) avec le fournisseur Amadeus.
+- Amadeus reste le seul adaptateur fournisseur effectivement connecté dans cette version; aucune connexion réelle à Skyscanner, KAYAK ou Google Flights n'est prétendue.
+- La règle de qualification d'une promotion exige une référence historique vérifiée et au moins cinq observations comparables; le stockage historique et son branchement au flux live ne sont pas encore implémentés.
+- Aucun prix réel n'est disponible tant qu'un fournisseur autorisé n'est pas configuré et testé.
+
 
 ## Prototype MVP
 
@@ -27,9 +49,11 @@ Une API Node.js sans dépendances est disponible dans `api/`. Elle utilise l'API
 5. Vérifier `GET /api/health`, puis tester `POST /api/flights/search` (`origin`, `destination`, `departureDate`, `returnDate` facultatif, `adults`, `currencyCode`) et `POST /api/hotels/search` (`cityCode`, `checkInDate`, `checkOutDate`, `adults`, `roomQuantity` facultatif (1 à 4 chambres), `currencyCode`).
 6. Utiliser l'environnement de test jusqu'à validation du compte et de l'accès production.
 
+**Découverte globale :** `POST /api/discovery/search` est désactivé par défaut. Pour l'activer après validation des coûts et conditions fournisseur, définir `TRIPBOOST_DISCOVERY_ENABLED=true` et configurer les identifiants Amadeus. L'endpoint limite les recherches globales à une requête par minute et par IP; les recherches simples sont limitées à 30 par minute et par IP. La recherche globale couvre au plus neuf destinations avec deux appels simultanés.
+
 Tests locaux : `npm test` (ou `node --test tests/*.mjs api/*.test.mjs`). La suite couvre les validations vols/hôtels et aller-retour, la normalisation et le tri des offres, le rendu du front-end, ainsi qu’un test d’intégration HTTP qui démarre réellement l’API et vérifie la santé, CORS, les types de contenu, les paramètres invalides, l’absence de clés fournisseur et les routes inconnues. La CI GitHub Actions vérifie aussi la configuration Docker Compose et construit l’image du conteneur à chaque push sur `main`. Les tests ne nécessitent aucune clé fournisseur.
 
-**Intégration interface :** les boutons « Vols » tentent maintenant une recherche live via `/api/health` puis `/api/flights/search`. L’origine est saisie explicitement par l’utilisateur; les codes IATA internationaux à trois lettres sont acceptés, avec quelques alias de grandes villes (Londres, New York, Amsterdam, Paris, Istanbul, Barcelone, Rome, Lisbonne, Madrid et Dubaï). Aucun pays ni aéroport n’est présélectionné. Pour une API hébergée sur un autre domaine, renseigner son URL dans `config.js` (`window.TRIPRADAR_API_BASE`) avant déploiement. Définir `ALLOWED_ORIGIN` côté serveur sur l’origine exacte de l’interface en HTTPS, sans joker. Si l’API ou les identifiants Amadeus sont indisponibles, l’interface n’invente aucun tarif et propose une recherche externe. La recherche de vols prend en charge l’aller simple ou l’aller-retour lorsque `returnDate` est fourni; les hôtels peuvent renvoyer des offres pour les dates du séjour lorsque l’accès fournisseur le permet.
+**Intégration interface :** les boutons « Vols » tentent maintenant une recherche live via `/api/health` puis `/api/flights/search`. L’origine est saisie explicitement par l’utilisateur; les codes IATA internationaux à trois lettres sont acceptés, avec quelques alias de grandes villes (Londres, New York, Amsterdam, Paris, Istanbul, Barcelone, Rome, Lisbonne, Madrid et Dubaï). Aucun pays ni aéroport n’est présélectionné. Pour une API hébergée sur un autre domaine, renseigner son URL dans `config.js` (`window.TRIPBOOST_API_BASE`) avant déploiement. Définir `ALLOWED_ORIGIN` côté serveur sur l’origine exacte de l’interface en HTTPS, sans joker. Si l’API ou les identifiants Amadeus sont indisponibles, l’interface n’invente aucun tarif et propose une recherche externe. La recherche de vols prend en charge l’aller simple ou l’aller-retour lorsque `returnDate` est fourni; les hôtels peuvent renvoyer des offres pour les dates du séjour lorsque l’accès fournisseur le permet.
 
 ## Lancer
 
@@ -47,11 +71,11 @@ Les prix et durées du catalogue de destinations sont **fictifs, à titre de dé
 
 ## Prochaines étapes vers un produit fiable
 
-1. **Bloquant pour le lancement public :** configurer des identifiants fournisseur actifs, déployer l’API et vérifier la couverture réelle dans les marchés internationaux visés, les conditions d’accès et les droits d’affichage.
-2. Étendre le calcul aux frais connus, sans mélanger les devises.
-3. Ajouter les filtres de durée, bagages, escales, devise, nombre de voyageurs et coût total du séjour.
-4. Tester l’installation PWA, le mode hors ligne, l’accessibilité et les parcours mobiles Android/iOS.
-5. Exécuter les tests de bout en bout sur l’API déployée, confirmer les tarifs et l’inventaire réels, puis valider les parcours Android/iOS.
+1. **Bloquant pour le lancement public :** configurer les identifiants Amadeus, déployer l'API et vérifier la couverture réelle, les conditions d'accès et les droits d'affichage.
+2. Ajouter un stockage historique des prix et un calcul de référence médiane par trajet et conditions comparables; aucune baisse exceptionnelle ne doit être annoncée avant cela.
+3. Ajouter et tester d'autres connecteurs autorisés sans prétendre que Skyscanner, KAYAK ou Google Flights sont des fournisseurs intégrés.
+4. Ajouter une recherche par fenêtre de dates, la détection des départs de dernière minute et des liens profonds fournisseurs.
+5. Compléter les frais connus, filtres de durée/bagages/escales et tests PWA/accessibilité sur Android et iOS.
 
 **Règle de vérité produit :** tant qu’aucun fournisseur n’est connecté, les prix restent explicitement fictifs et ne doivent jamais être présentés comme des offres disponibles ou réservables.
 
