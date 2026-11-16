@@ -200,3 +200,39 @@ test("refreshes the cached token when Amadeus credentials rotate", async () => {
     else process.env.AMADEUS_CLIENT_SECRET = oldSecret;
   }
 });
+
+
+test("rejects zero and negative flight fares while keeping positive offers", async () => {
+  const oldId = process.env.AMADEUS_CLIENT_ID;
+  const oldSecret = process.env.AMADEUS_CLIENT_SECRET;
+  process.env.AMADEUS_CLIENT_ID = "tripboost-zero-fare-regression";
+  process.env.AMADEUS_CLIENT_SECRET = "zero-fare-test-secret";
+  const fakeFetch = async (url) => {
+    if (String(url).includes("/v1/security/oauth2/token")) {
+      return { ok: true, json: async () => ({ access_token: "zero-fare-token", expires_in: 3600 }) };
+    }
+    return {
+      ok: true,
+      json: async () => ({
+        data: [
+          { id: "zero", price: { grandTotal: "0.00", currency: "EUR" }, itineraries: [] },
+          { id: "negative", price: { grandTotal: "-1.00", currency: "EUR" }, itineraries: [] },
+          { id: "valid", price: { grandTotal: "1.00", currency: "EUR" }, itineraries: [] }
+        ]
+      })
+    };
+  };
+  try {
+    const offers = await searchFlights({
+      origin: "JFK", destination: "LHR", departureDate: "2026-12-10",
+      adults: 1, currencyCode: "EUR"
+    }, fakeFetch);
+    assert.deepEqual(offers.map((offer) => offer.id), ["valid"]);
+    assert.ok(offers.every((offer) => offer.price > 0));
+  } finally {
+    if (oldId === undefined) delete process.env.AMADEUS_CLIENT_ID;
+    else process.env.AMADEUS_CLIENT_ID = oldId;
+    if (oldSecret === undefined) delete process.env.AMADEUS_CLIENT_SECRET;
+    else process.env.AMADEUS_CLIENT_SECRET = oldSecret;
+  }
+});

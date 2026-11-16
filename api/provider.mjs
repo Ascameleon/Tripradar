@@ -67,7 +67,7 @@ export async function searchFlights(input, fetchImpl = fetch) {
       provider: "Amadeus",
       tripType: input.returnDate ? "round-trip" : "one-way"
     };
-  }).filter((offer) => Number.isFinite(offer.price) && offer.price >= 0).sort((a, b) => a.price - b.price);
+  }).filter((offer) => Number.isFinite(offer.price) && offer.price > 0).sort((a, b) => a.price - b.price);
 }
 
 export async function searchHotels(input, fetchImpl = fetch) {
