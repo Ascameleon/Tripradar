@@ -61,3 +61,36 @@ export function validateHotelSearch(input, now = new Date()) {
       roomQuantity > 4 || !/^[A-Z]{3}$/.test(currencyCode)) return null;
   return { cityCode, checkInDate, checkOutDate, adults, roomQuantity, currencyCode };
 }
+
+
+export function validateDiscoverySearch(input, now = new Date()) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return null;
+  if (!Array.isArray(input.destinations) || input.destinations.length < 1 || input.destinations.length > 9) return null;
+  if (input.destinations.some((destination) => typeof destination !== "string")) return null;
+
+  const destinations = input.destinations.map((destination) => destination.trim().toUpperCase());
+  if (new Set(destinations).size !== destinations.length) return null;
+
+  const shared = {
+    origin: input.origin,
+    departureDate: input.departureDate,
+    ...(input.returnDate != null ? { returnDate: input.returnDate } : {}),
+    ...(input.adults != null ? { adults: input.adults } : {}),
+    ...(input.currencyCode != null ? { currencyCode: input.currencyCode } : {})
+  };
+  const first = validateSearch({ ...shared, destination: destinations[0] }, now);
+  if (!first) return null;
+
+  for (const destination of destinations.slice(1)) {
+    if (!validateSearch({ ...shared, destination }, now)) return null;
+  }
+
+  return {
+    origin: first.origin,
+    destinations,
+    departureDate: first.departureDate,
+    ...(first.returnDate ? { returnDate: first.returnDate } : {}),
+    adults: first.adults,
+    currencyCode: first.currencyCode
+  };
+}
