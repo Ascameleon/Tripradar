@@ -21,10 +21,12 @@ test("rejects impossible dates and dates in the past", () => {
   assert.equal(validateSearch({ ...valid, departureDate: "2026-10-14" }, today), null);
 });
 
-test("rejects unsupported passenger counts and malformed currency codes", () => {
+test("enforces the six-adult flight product limit and validates currency", () => {
   assert.equal(validateSearch({ ...valid, adults: 0 }, today), null);
   assert.deepEqual(validateSearch({ ...valid, adults: null }, today), valid);
-  assert.equal(validateSearch({ ...valid, adults: 10 }, today), null);
+  assert.deepEqual(validateSearch({ ...valid, adults: 6 }, today), { ...valid, adults: 6 });
+  assert.equal(validateSearch({ ...valid, adults: 7 }, today), null);
+  assert.equal(validateSearch({ ...valid, adults: 9 }, today), null);
   assert.equal(validateSearch({ ...valid, currencyCode: "EURO" }, today), null);
 });
 
@@ -52,8 +54,9 @@ test("rejects invalid hotel payloads, dates, city codes, guests, and currency", 
   assert.equal(validateHotelSearch({ ...hotel, checkOutDate: hotel.checkInDate }, today), null);
   assert.equal(validateHotelSearch({ ...hotel, checkInDate: "2026-02-30" }, today), null);
   assert.equal(validateHotelSearch({ ...hotel, cityCode: "Istanbul" }, today), null);
-  assert.equal(validateHotelSearch({ ...hotel, adults: 10 }, today), null);
   assert.equal(validateHotelSearch({ ...hotel, adults: 0 }, today), null);
+  assert.equal(validateHotelSearch({ ...hotel, adults: 7 }, today), null);
+  assert.equal(validateHotelSearch({ ...hotel, adults: 9 }, today), null);
   assert.equal(validateHotelSearch({ ...hotel, roomQuantity: 0 }, today), null);
   assert.equal(validateHotelSearch({ ...hotel, roomQuantity: 5 }, today), null);
   assert.equal(validateHotelSearch({ ...hotel, roomQuantity: 3 }, today).roomQuantity, 3);
