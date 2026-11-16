@@ -4,7 +4,7 @@ export function validateSearch(input, now = new Date()) {
   const destination = String(input.destination || "").trim().toUpperCase();
   const departureDate = String(input.departureDate || "");
   const returnDate = String(input.returnDate || "");
-  const adults = Number(input.adults ?? 1);
+  const adults = input.adults ?? 1;
   const currencyCode = String(input.currencyCode || "EUR").toUpperCase();
   const isoDate = /^\d{4}-\d{2}-\d{2}$/;
   const parseDate = (value) => {
@@ -17,7 +17,7 @@ export function validateSearch(input, now = new Date()) {
   const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   if (!/^[A-Z]{3}$/.test(origin) || !/^[A-Z]{3}$/.test(destination) || origin === destination ||
       !departure || departure < today || (returnDate && (!returnParsed || returnParsed <= departure)) ||
-      !Number.isInteger(adults) || adults < 1 || adults > 6 || !/^[A-Z]{3}$/.test(currencyCode)) return null;
+      typeof adults !== "number" || !Number.isSafeInteger(adults) || adults < 1 || adults > 6 || !/^[A-Z]{3}$/.test(currencyCode)) return null;
   const result = { origin, destination, departureDate, adults, currencyCode };
   if (returnDate) result.returnDate = returnDate;
   return result;
@@ -27,8 +27,8 @@ export function validateHotelSearch(input, now = new Date()) {
   const cityCode = String(input.cityCode || "").trim().toUpperCase();
   const checkInDate = String(input.checkInDate || "");
   const checkOutDate = String(input.checkOutDate || "");
-  const adults = Number(input.adults ?? 1);
-  const roomQuantity = Number(input.roomQuantity ?? 1);
+  const adults = input.adults ?? 1;
+  const roomQuantity = input.roomQuantity ?? 1;
   const currencyCode = String(input.currencyCode || "EUR").toUpperCase();
   const isoDate = /^\d{4}-\d{2}-\d{2}$/;
   const parseDate = (value) => {
@@ -40,6 +40,6 @@ export function validateHotelSearch(input, now = new Date()) {
   const checkOut = parseDate(checkOutDate);
   const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   if (!/^[A-Z]{3}$/.test(cityCode) || !checkIn || !checkOut || checkIn < today || checkOut <= checkIn ||
-      !Number.isInteger(adults) || adults < 1 || adults > 6 || !Number.isInteger(roomQuantity) || roomQuantity < 1 || roomQuantity > 4 || !/^[A-Z]{3}$/.test(currencyCode)) return null;
+      typeof adults !== "number" || !Number.isSafeInteger(adults) || adults < 1 || adults > 6 || typeof roomQuantity !== "number" || !Number.isSafeInteger(roomQuantity) || roomQuantity < 1 || roomQuantity > 4 || !/^[A-Z]{3}$/.test(currencyCode)) return null;
   return { cityCode, checkInDate, checkOutDate, adults, roomQuantity, currencyCode };
 }

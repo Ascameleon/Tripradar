@@ -27,6 +27,9 @@ test("enforces the six-adult flight product limit and validates currency", () =>
   assert.deepEqual(validateSearch({ ...valid, adults: 6 }, today), { ...valid, adults: 6 });
   assert.equal(validateSearch({ ...valid, adults: 7 }, today), null);
   assert.equal(validateSearch({ ...valid, adults: 9 }, today), null);
+  assert.equal(validateSearch({ ...valid, adults: "2" }, today), null);
+  assert.equal(validateSearch({ ...valid, adults: true }, today), null);
+  assert.equal(validateSearch({ ...valid, adults: 2.5 }, today), null);
   assert.equal(validateSearch({ ...valid, currencyCode: "EURO" }, today), null);
 });
 
@@ -57,8 +60,13 @@ test("rejects invalid hotel payloads, dates, city codes, guests, and currency", 
   assert.equal(validateHotelSearch({ ...hotel, adults: 0 }, today), null);
   assert.equal(validateHotelSearch({ ...hotel, adults: 7 }, today), null);
   assert.equal(validateHotelSearch({ ...hotel, adults: 9 }, today), null);
+  assert.equal(validateHotelSearch({ ...hotel, adults: "2" }, today), null);
+  assert.equal(validateHotelSearch({ ...hotel, adults: true }, today), null);
   assert.equal(validateHotelSearch({ ...hotel, roomQuantity: 0 }, today), null);
   assert.equal(validateHotelSearch({ ...hotel, roomQuantity: 5 }, today), null);
+  assert.equal(validateHotelSearch({ ...hotel, roomQuantity: "2" }, today), null);
+  assert.equal(validateHotelSearch({ ...hotel, roomQuantity: true }, today), null);
+  assert.equal(validateHotelSearch({ ...hotel, roomQuantity: 2.5 }, today), null);
   assert.equal(validateHotelSearch({ ...hotel, roomQuantity: 3 }, today).roomQuantity, 3);
   assert.equal(validateHotelSearch({ ...hotel, currencyCode: "EURO" }, today), null);
 });
