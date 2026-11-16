@@ -1,56 +1,56 @@
-# TripBoost — Live inventory integration plan
+# TripBoost — live inventory integration
 
 ## Decision
 
-Keep the current static application as a lightweight, zero-infrastructure prototype. Do not add fake API responses or put provider credentials in browser JavaScript. Live search requires a small server-side adapter because API secrets must remain private.
+Keep the current static application and small Node.js API as a zero-cost prototype. Do not add fake API responses, paid services or provider credentials to browser JavaScript. Live inventory requires approved supplier access and server-side secrets.
+
+## Current verified backend
+
+- Amadeus is the only supplier adapter connected in the current API. No live Skyscanner, KAYAK, Google Flights or Duffel connector is implemented.
+- Flight and hotel endpoints validate input, enforce JSON content types, exact-origin CORS, bounded request sizes and request timeouts.
+- The multi-destination endpoint fans out to at most nine destination codes with concurrency capped at two. It returns partial results when a destination fails.
+- Global discovery is disabled by default. An operator must explicitly set `TRIPBOOST_DISCOVERY_ENABLED=true` after checking provider access, terms and potential costs.
+- Current in-memory rate limits are 30 standard searches/minute/IP and one global discovery search/minute/IP. They are per process, not a distributed quota.
+- No historical price database or comparable-price baseline is connected. A low live fare is therefore not labelled an exceptional promotion; it remains an unconfirmed decrease.
+- No supplier credentials or production API deployment are configured in this repository. Successful CI tests do not establish live supplier access.
 
 ## Candidate provider path
 
-- **Flights:** evaluate Amadeus Self-Service Flight Offers Search first for a narrow MVP; its official documentation describes itinerary search and price confirmation. Confirm account eligibility, production access, route coverage in selected international markets, usage limits, and commercial terms before selecting it.
-- **Alternative / combined flights and stays:** evaluate Duffel's Flights and Stays APIs if its commercial onboarding, inventory, and terms fit the product. Verify actual destination coverage and live-mode access before committing.
-- **Hotels:** assess the chosen provider's hotel inventory separately. Do not assume a flight API's hotel endpoints provide broad or bookable coverage.
+- **Flights:** Amadeus Self-Service Flight Offers Search is the current adapter. Confirm account eligibility, production access, route coverage in selected international markets, usage limits and commercial terms before enabling live discovery.
+- **Alternative flights and stays:** evaluate Duffel only after confirming onboarding, inventory and commercial terms.
+- **Hotels:** assess hotel inventory separately. Do not assume that a flight API's hotel endpoints provide broad or bookable coverage.
 
 Official documentation:
-- Amadeus flight API guide: https://developers.amadeus.com/self-service/category/flights
-- Amadeus hotel API guide: https://developers.amadeus.com/self-service/category/hotels
-- Duffel API documentation: https://duffel.com/docs
+- Amadeus flights: https://developers.amadeus.com/self-service/category/flights
+- Amadeus hotels: https://developers.amadeus.com/self-service/category/hotels
+- Duffel: https://duffel.com/docs
 
-## TripBoost discovery architecture
+## Target discovery architecture
 
-- The discovery endpoint fans out searches across destination codes concurrently and returns partial results even when one destination/provider fails.
-- Provider adapters are independent; Amadeus is the only adapter connected in the current branch. Add other sources only through authorised APIs, feeds or permitted search links.
-- The opportunity classifier requires a verified historical median, matching comparison key/currency and at least five comparable observations. Otherwise the offer is labelled as an unconfirmed decrease.
-- The interactive map is the primary discovery surface; demonstration markers are clearly distinguished from real provider results.
-
-## Minimal architecture
-
-1. Browser sends validated search criteria to a same-origin backend endpoint.
-2. Backend validates IATA codes, dates, passenger count, currency, and budget; rejects invalid or excessive requests.
-3. Provider adapter calls the supplier with server-held credentials and a strict timeout.
-4. Normalize each offer into: provider, offer ID, origin/destination, segments, departure/arrival times with time zones, total price, currency, baggage, stops, provider deeplink, checked-at timestamp, and expiry if supplied.
-5. Sort by comparable total price; never combine different currencies without a dated exchange-rate source.
-6. Revalidate an offer with the supplier before redirecting to a booking flow. Search results are not a booking guarantee.
-7. Apply request-size limits, JSON content-type enforcement, per-client rate limits, strict timeouts, and an exact allowed-origin setting. Reject requests from disallowed browser origins and avoid returning upstream errors or credentials. Trust forwarded IP headers only behind a trusted proxy.\n8. If a supplier fails or returns no offers, show a clear unavailable state; never silently fall back to invented prices.
+1. Browser sends validated origin, destination codes, dates, passenger count and currency to the same-origin backend.
+2. Backend validates IATA codes, dates, passenger count and currency; it rejects invalid or excessive requests.
+3. Approved provider adapters call suppliers with server-held credentials and strict timeouts.
+4. Normalize each offer into provider, offer ID, origin/destination, itinerary, departure/arrival times, total price, currency, stops, provider link and checked-at timestamp.
+5. Sort only comparable prices; never combine currencies without a dated exchange-rate source.
+6. Revalidate an offer with the supplier before redirecting. Search results are not a booking guarantee.
+7. Apply request-size limits, content-type enforcement, per-client rate limits, strict timeouts and exact allowed-origin settings. Trust forwarded IP headers only behind a trusted proxy.
+8. If a supplier fails or returns no offers, show an unavailable state; never fall back to invented prices.
 
 ## Required configuration (server only)
 
-- Provider client ID / API key
-- Provider client secret / access token
+- Provider client ID and secret
 - API environment (test or production)
-- Allowed origins and rate limits
-- Optional exchange-rate source, only if cross-currency sorting is implemented
+- Exact allowed frontend origin
+- Explicit discovery opt-in after provider terms/cost review
+- Optional historical-price store and exchange-rate source, only when implemented and validated
 
-Do not commit real secrets. Add credentials only through the deployment platform's encrypted environment variables.
+Never commit real secrets. Add credentials only through encrypted deployment environment variables.
 
 ## Launch gates
 
-- Confirm provider eligibility and production access.
-- Confirm Algeria-origin route coverage and hotel inventory in target destinations.
-- Confirm legal display requirements, attribution, caching restrictions, and affiliate/booking terms.
-- Verify actual prices against provider responses and re-check timestamps/expiry.
-- Add mocked adapter tests, schema validation tests, timeout/error tests, and end-to-end tests.
-- Keep demonstration destinations visibly marked until live data is connected and validated.
-
-## Current limitation
-
-The server-side adapter now exposes flight and hotel search endpoints with strict input validation, JSON request checks, exact-origin CORS, timeouts, and a bounded in-memory rate limit. The UI calls both endpoints and falls back to external search without inventing prices. A partial estimate is shown only when both live offers exist in the same currency. No supplier credentials or backend deployment are configured in this repository, so production live inventory remains gated on deployment and approved provider access.
+- Confirm provider eligibility, production access and display rights.
+- Verify actual inventory and fare coverage in the international markets selected for the product.
+- Confirm attribution, caching restrictions, cancellation/fare conditions and deeplink terms.
+- Store timestamped comparable observations before calling any fare an exceptional drop.
+- Add mocked adapter tests, schema validation, timeout/error tests and end-to-end tests.
+- Keep illustrative map markers clearly labelled until live data is connected and validated.
