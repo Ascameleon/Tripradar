@@ -238,6 +238,57 @@ test("rejects zero and negative flight fares while keeping positive offers", asy
 });
 
 
+test("clears the previous bearer token when rotated credentials fail authentication", async () => {
+  const oldId = process.env.AMADEUS_CLIENT_ID;
+  const oldSecret = process.env.AMADEUS_CLIENT_SECRET;
+  const clientId = "tripboost-clear-rotated-token-regression";
+  const tokenRequests = [];
+  const flightTokens = [];
+  const fakeFetch = async (url, options = {}) => {
+    if (String(url).includes("/v1/security/oauth2/token")) {
+      const secret = new URLSearchParams(options.body).get("client_secret");
+      tokenRequests.push(secret);
+      if (secret === "secret-b") {
+        return { ok: false, status: 401 };
+      }
+      return {
+        ok: true,
+        json: async () => ({
+          access_token: `rotation-token-${tokenRequests.length}`,
+          expires_in: 3600
+        })
+      };
+    }
+    flightTokens.push(options.headers?.authorization);
+    return { ok: true, json: async () => ({ data: [] }) };
+  };
+  const input = {
+    origin: "JFK", destination: "LHR", departureDate: "2026-12-10",
+    adults: 1, currencyCode: "EUR"
+  };
+
+  try {
+    process.env.AMADEUS_CLIENT_ID = clientId;
+    process.env.AMADEUS_CLIENT_SECRET = "secret-a";
+    await searchFlights(input, fakeFetch);
+
+    process.env.AMADEUS_CLIENT_SECRET = "secret-b";
+    await assert.rejects(searchFlights(input, fakeFetch), /Provider authentication failed/);
+
+    process.env.AMADEUS_CLIENT_SECRET = "secret-a";
+    await searchFlights(input, fakeFetch);
+
+    assert.deepEqual(tokenRequests, ["secret-a", "secret-b", "secret-a"]);
+    assert.deepEqual(flightTokens, ["Bearer rotation-token-1", "Bearer rotation-token-3"]);
+  } finally {
+    if (oldId === undefined) delete process.env.AMADEUS_CLIENT_ID;
+    else process.env.AMADEUS_CLIENT_ID = oldId;
+    if (oldSecret === undefined) delete process.env.AMADEUS_CLIENT_SECRET;
+    else process.env.AMADEUS_CLIENT_SECRET = oldSecret;
+  }
+});
+
+
 test("coalesces concurrent Amadeus authentication requests", async () => {
   const oldId = process.env.AMADEUS_CLIENT_ID;
   const oldSecret = process.env.AMADEUS_CLIENT_SECRET;
