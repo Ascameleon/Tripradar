@@ -7,7 +7,12 @@ const tokenRequests = new Map();
 async function getToken(fetchImpl = fetch) {
   const id = process.env.AMADEUS_CLIENT_ID;
   const secret = process.env.AMADEUS_CLIENT_SECRET;
-  if (!id || !secret) { const error = new Error("Amadeus credentials are not configured"); error.status = 503; throw error; }
+  if (!id || !secret) {
+    tokenCache = { key: null, value: null, expiresAt: 0 };
+    const error = new Error("Amadeus credentials are not configured");
+    error.status = 503;
+    throw error;
+  }
   const cacheKey = createHash("sha256")
     .update(BASE)
     .update("\0")
@@ -19,6 +24,9 @@ async function getToken(fetchImpl = fetch) {
   if (tokenCache.key === cacheKey && tokenCache.value && tokenCache.expiresAt > now + 30_000) {
     return tokenCache.value;
   }
+
+  // A rotated or expired bearer token must not remain in process memory while re-authenticating.
+  tokenCache = { key: null, value: null, expiresAt: 0 };
 
   const inFlight = tokenRequests.get(cacheKey);
   if (inFlight) return inFlight;
@@ -35,11 +43,15 @@ async function getToken(fetchImpl = fetch) {
     }
     const expiresIn = Number(data.expires_in);
     const ttlSeconds = Number.isFinite(expiresIn) ? Math.max(0, expiresIn - 60) : 0;
-    tokenCache = {
-      key: cacheKey,
-      value: accessToken,
-      expiresAt: Date.now() + ttlSeconds * 1000
-    };
+    // An in-flight request may finish after runtime credentials have rotated again.
+    // Only cache its bearer token if this credential pair is still the active configuration.
+    if (process.env.AMADEUS_CLIENT_ID === id && process.env.AMADEUS_CLIENT_SECRET === secret) {
+      tokenCache = {
+        key: cacheKey,
+        value: accessToken,
+        expiresAt: Date.now() + ttlSeconds * 1000
+      };
+    }
     return accessToken;
   })();
   tokenRequests.set(cacheKey, pending);
