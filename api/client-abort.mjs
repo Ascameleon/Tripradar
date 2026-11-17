@@ -1,5 +1,3 @@
-import { EventEmitter } from "node:events";
-
 export function createClientAbortSignal(response) {
   if (!response || typeof response.once !== "function" || typeof response.off !== "function") {
     throw new TypeError("A Node HTTP response is required");
