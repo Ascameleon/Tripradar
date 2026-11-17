@@ -38,6 +38,20 @@ test("discovery preserves successful destinations when one provider search fails
   assert.equal(JSON.stringify(result).includes("private upstream detail"), false);
 });
 
+test("discovery excludes malformed or non-positive provider offers", async () => {
+  const result = await searchDiscovery({ ...input, destinations: ["CDG"] }, async () => [
+    { id: "valid", price: 125, currency: "EUR" },
+    { id: "zero", price: 0, currency: "EUR" },
+    { id: "negative", price: -10, currency: "EUR" },
+    { id: "missing" },
+    { id: "not-a-number", price: "unknown", currency: "EUR" },
+    { id: "infinite", price: Infinity, currency: "EUR" },
+    null
+  ]);
+  assert.deepEqual(result.offers.map((offer) => offer.id), ["valid"]);
+  assert.equal(result.sources[0].resultCount, 1);
+});
+
 test("discovery rejects unbounded concurrency and invalid destination counts", async () => {
   await assert.rejects(() => searchDiscovery(input, async () => [], { maxConcurrency: 9 }), RangeError);
   await assert.rejects(() => searchDiscovery({ ...input, destinations: [] }, async () => []), TypeError);
