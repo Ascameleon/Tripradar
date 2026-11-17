@@ -162,7 +162,7 @@ async function searchAllDestinations(){
   if(!health.ok)throw new Error("api_unavailable");
   const status=await health.json();if(requestId!==activeLiveRequest||currentCriteriaKey()!==criteriaKey)return;
   if(!status.providerConfigured)throw new Error("no_source_connected");
-  const response=await fetch(apiBase+"/api/discovery/search",{method:"POST",headers:{"content-type":"application/json",accept:"application/json"},body:JSON.stringify({origin,destinations:Object.values(destinationCodes),departureDate,...($("dateTo").value&&$("dateTo").value>departureDate?{returnDate:$("dateTo").value}:{}),adults:Number($("adults").value||1),currencyCode:"EUR"}),signal:AbortSignal.timeout(25000)});
+  const response=await fetch(apiBase+"/api/discovery/search",{method:"POST",headers:{"content-type":"application/json",accept:"application/json"},body:JSON.stringify({origin,destinations:Object.values(destinationCodes),departureDate,...($("dateTo").value&&$("dateTo").value>departureDate?{returnDate:$("dateTo").value}:{}),adults:Number($("adults").value||1),currencyCode:"EUR"}),signal:AbortSignal.timeout(65000)});
   const payload=await response.json();if(requestId!==activeLiveRequest||currentCriteriaKey()!==criteriaKey)return;if(!response.ok)throw new Error(payload.message||"discovery_failed");
   liveDiscoveryOffers=Array.isArray(payload.offers)?payload.offers:[];renderMap();
   const sourceSummary=(payload.sources||[]).map(s=>s.name+": "+s.resultCount+" offre(s)").join(" · ");
