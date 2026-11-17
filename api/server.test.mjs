@@ -344,3 +344,69 @@ test("malformed request targets return 400 without terminating the API", async (
   const health = await fetch(base + "/api/health");
   assert.equal(health.status, 200, "the API must continue serving valid requests");
 });
+
+
+test("aborted request bodies do not create unhandled rejections or terminate the API", async (t) => {
+  const port = await freePort();
+  const origin = "https://tripradar.example";
+  const child = spawn(process.execPath, ["api/server.mjs"], {
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      PORT: String(port),
+      ALLOWED_ORIGIN: origin,
+      AMADEUS_CLIENT_ID: "",
+      AMADEUS_CLIENT_SECRET: ""
+    },
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  let output = "";
+  child.stdout.on("data", (chunk) => { output += chunk; });
+  child.stderr.on("data", (chunk) => { output += chunk; });
+  t.after(() => {
+    if (child.exitCode === null) child.kill("SIGTERM");
+  });
+
+  const base = `http://127.0.0.1:${port}`;
+  let ready = false;
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    if (child.exitCode !== null) throw new Error("API exited before ready: " + output);
+    try {
+      const response = await fetch(base + "/api/health", { signal: AbortSignal.timeout(300) });
+      if (response.ok) { ready = true; break; }
+    } catch {}
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  assert.equal(ready, true, "API must become ready");
+
+  await new Promise((resolve, reject) => {
+    const socket = connectNet(port, "127.0.0.1");
+    socket.once("connect", () => {
+      socket.write([
+        "POST /api/flights/search HTTP/1.1",
+        "Host: localhost",
+        "Origin: " + origin,
+        "Content-Type: application/json",
+        "Content-Length: 100000",
+        "Connection: close",
+        "",
+        "",
+        '{"partial":'
+      ].join(String.fromCharCode(13, 10)));
+      setTimeout(() => {
+        socket.destroy();
+        resolve();
+      }, 30);
+    });
+    socket.once("error", (error) => {
+      if (error.code === "ECONNRESET") resolve();
+      else reject(error);
+    });
+  });
+
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  assert.equal(child.exitCode, null, "an aborted body must not crash the API process");
+  const health = await fetch(base + "/api/health");
+  assert.equal(health.status, 200, "the API must continue serving after the aborted request");
+});
+
