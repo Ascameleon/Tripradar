@@ -264,7 +264,13 @@ test("global discovery aborts active supplier requests when the HTTP client disc
     currencyCode: "EUR"
   }));
 
-  await flightsStarted;
+  let startTimer;
+  const startedInTime = await Promise.race([
+    flightsStarted.then(() => true),
+    new Promise((resolve) => { startTimer = setTimeout(() => resolve(false), 3_000); })
+  ]);
+  clearTimeout(startTimer);
+  assert.equal(startedInTime, true, "two supplier requests should start before cancellation");
   request.destroy();
 
   const deadline = Date.now() + 3_000;
