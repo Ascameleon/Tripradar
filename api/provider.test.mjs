@@ -432,3 +432,104 @@ test("aborts an in-flight flight search when its HTTP client disconnects", async
     else process.env.AMADEUS_CLIENT_SECRET = oldSecret;
   }
 });
+
+test("aborts shared token authentication when its only search caller disconnects", async () => {
+  const oldId = process.env.AMADEUS_CLIENT_ID;
+  const oldSecret = process.env.AMADEUS_CLIENT_SECRET;
+  process.env.AMADEUS_CLIENT_ID = "tripboost-auth-abort-only-waiter";
+  process.env.AMADEUS_CLIENT_SECRET = "auth-abort-test-secret";
+  let resolveAuthStarted;
+  const authStarted = new Promise((resolve) => { resolveAuthStarted = resolve; });
+  let authSignal;
+  let authAbortCount = 0;
+  let flightRequests = 0;
+  const fakeFetch = async (url, options = {}) => {
+    if (String(url).includes("/v1/security/oauth2/token")) {
+      authSignal = options.signal;
+      resolveAuthStarted();
+      return new Promise((resolve, reject) => {
+        if (authSignal.aborted) return reject(authSignal.reason);
+        authSignal.addEventListener("abort", () => {
+          authAbortCount += 1;
+          reject(authSignal.reason);
+        }, { once: true });
+      });
+    }
+    flightRequests += 1;
+    throw new Error("flight search must not start after authentication is aborted");
+  };
+  const controller = new AbortController();
+
+  try {
+    const pending = searchFlights({
+      origin: "ALG", destination: "CDG", departureDate: "2027-11-10",
+      adults: 1, currencyCode: "EUR"
+    }, fakeFetch, { signal: controller.signal });
+    await authStarted;
+    assert.equal(authSignal.aborted, false);
+    controller.abort(new Error("client disconnected during authentication"));
+    await assert.rejects(pending, /client disconnected during authentication/);
+    assert.equal(authSignal.aborted, true);
+    assert.equal(authAbortCount, 1);
+    assert.equal(flightRequests, 0);
+  } finally {
+    if (oldId === undefined) delete process.env.AMADEUS_CLIENT_ID;
+    else process.env.AMADEUS_CLIENT_ID = oldId;
+    if (oldSecret === undefined) delete process.env.AMADEUS_CLIENT_SECRET;
+    else process.env.AMADEUS_CLIENT_SECRET = oldSecret;
+  }
+});
+
+test("keeps shared token authentication alive while another caller still waits", async () => {
+  const oldId = process.env.AMADEUS_CLIENT_ID;
+  const oldSecret = process.env.AMADEUS_CLIENT_SECRET;
+  process.env.AMADEUS_CLIENT_ID = "tripboost-auth-abort-shared-waiters";
+  process.env.AMADEUS_CLIENT_SECRET = "shared-auth-test-secret";
+  let resolveAuthStarted;
+  const authStarted = new Promise((resolve) => { resolveAuthStarted = resolve; });
+  let resolveAuth;
+  const authResponse = new Promise((resolve) => { resolveAuth = resolve; });
+  let authSignal;
+  let tokenRequests = 0;
+  let flightRequests = 0;
+  const fakeFetch = async (url, options = {}) => {
+    if (String(url).includes("/v1/security/oauth2/token")) {
+      tokenRequests += 1;
+      authSignal = options.signal;
+      resolveAuthStarted();
+      return authResponse;
+    }
+    flightRequests += 1;
+    return { ok: true, json: async () => ({ data: [] }) };
+  };
+  const firstController = new AbortController();
+  const secondController = new AbortController();
+  const input = {
+    origin: "ALG", destination: "CDG", departureDate: "2027-11-10",
+    adults: 1, currencyCode: "EUR"
+  };
+
+  try {
+    const first = searchFlights(input, fakeFetch, { signal: firstController.signal });
+    await authStarted;
+    const second = searchFlights(input, fakeFetch, { signal: secondController.signal });
+
+    firstController.abort(new Error("first caller disconnected"));
+    await assert.rejects(first, /first caller disconnected/);
+    assert.equal(authSignal.aborted, false, "one remaining waiter must keep shared authentication alive");
+
+    resolveAuth({ ok: true, json: async () => ({ access_token: "shared-auth-token", expires_in: 3600 }) });
+    const offers = await second;
+
+    assert.deepEqual(offers, []);
+    assert.equal(tokenRequests, 1, "concurrent callers with the same credentials must share authentication");
+    assert.equal(flightRequests, 1, "only the remaining caller should start a flight search");
+    assert.equal(authSignal.aborted, false);
+  } finally {
+    if (oldId === undefined) delete process.env.AMADEUS_CLIENT_ID;
+    else process.env.AMADEUS_CLIENT_ID = oldId;
+    if (oldSecret === undefined) delete process.env.AMADEUS_CLIENT_SECRET;
+    else process.env.AMADEUS_CLIENT_SECRET = oldSecret;
+  }
+});
+
