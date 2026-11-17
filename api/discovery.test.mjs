@@ -46,6 +46,11 @@ test("discovery excludes malformed or non-positive provider offers", async () =>
     { id: "missing" },
     { id: "not-a-number", price: "unknown", currency: "EUR" },
     { id: "infinite", price: Infinity, currency: "EUR" },
+    { id: "boolean-true", price: true, currency: "EUR" },
+    { id: "boolean-false", price: false, currency: "EUR" },
+    { id: "numeric-string", price: "125", currency: "EUR" },
+    { id: "array-price", price: [125], currency: "EUR" },
+    { id: "object-price", price: { amount: 125 }, currency: "EUR" },
     null
   ]);
   assert.deepEqual(result.offers.map((offer) => offer.id), ["valid"]);
