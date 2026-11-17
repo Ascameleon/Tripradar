@@ -25,9 +25,9 @@ async function getToken(fetchImpl = fetch, { signal } = {}) {
   }
   const cacheKey = createHash("sha256")
     .update(BASE)
-    .update("\\0")
+    .update("\0")
     .update(id)
-    .update("\\0")
+    .update("\0")
     .update(secret)
     .digest("hex");
   const now = Date.now();
