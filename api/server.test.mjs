@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { createServer } from "node:net";
+import { createServer, connect as connectNet } from "node:net";
 import { createServer as createHttpServer, request as httpRequest } from "node:http";
 
 async function getWithHost(port, path, origin, host) {
@@ -280,4 +280,67 @@ test("global discovery aborts active supplier requests when the HTTP client disc
   assert.equal(abortedFlightResponses, 2, "both in-flight supplier responses must be cancelled");
   await new Promise((resolve) => setTimeout(resolve, 50));
   assert.equal(flightRequests, 2, "no later destination request may start after client disconnect");
+});
+
+
+async function rawGet(port, requestTarget) {
+  return new Promise((resolve, reject) => {
+    const socket = connectNet(port, "127.0.0.1");
+    let response = "";
+    socket.setEncoding("utf8");
+    socket.once("connect", () => {
+      socket.end([
+        `GET ${requestTarget} HTTP/1.1`,
+        "Host: localhost",
+        "Connection: close",
+        "",
+        ""
+      ].join(String.fromCharCode(13, 10)));
+    });
+    socket.on("data", (chunk) => { response += chunk; });
+    socket.once("error", reject);
+    socket.once("end", () => resolve(response));
+  });
+}
+
+test("malformed request targets return 400 without terminating the API", async (t) => {
+  const port = await freePort();
+  const origin = "https://tripradar.example";
+  const child = spawn(process.execPath, ["api/server.mjs"], {
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      PORT: String(port),
+      ALLOWED_ORIGIN: origin,
+      AMADEUS_CLIENT_ID: "",
+      AMADEUS_CLIENT_SECRET: ""
+    },
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  let output = "";
+  child.stdout.on("data", (chunk) => { output += chunk; });
+  child.stderr.on("data", (chunk) => { output += chunk; });
+  t.after(() => {
+    if (child.exitCode === null) child.kill("SIGTERM");
+  });
+
+  const base = `http://127.0.0.1:${port}`;
+  let ready = false;
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    if (child.exitCode !== null) throw new Error("API exited before ready: " + output);
+    try {
+      const response = await fetch(base + "/api/health", { signal: AbortSignal.timeout(300) });
+      if (response.ok) { ready = true; break; }
+    } catch {}
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  assert.equal(ready, true, "API must become ready");
+
+  const malformed = await rawGet(port, "http://[");
+  assert.ok(malformed.startsWith("HTTP/1.1 400 "), malformed);
+  assert.match(malformed, /invalid_request_target/);
+  assert.equal(child.exitCode, null, "the malformed request must not crash the API process");
+
+  const health = await fetch(base + "/api/health");
+  assert.equal(health.status, 200, "the API must continue serving valid requests");
 });
