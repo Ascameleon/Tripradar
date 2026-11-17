@@ -82,13 +82,22 @@ const server = http.createServer(async (req, res) => {
   if (declaredLength > maxBodyBytes) return json(res, 413, { error: "request_too_large" }, origin);
 
   let body = "";
-  for await (const chunk of req) {
-    body += chunk;
-    if (Buffer.byteLength(body, "utf8") > maxBodyBytes) {
-      json(res, 413, { error: "request_too_large" }, origin);
-      return;
+  try {
+    for await (const chunk of req) {
+      body += chunk;
+      if (Buffer.byteLength(body, "utf8") > maxBodyBytes) {
+        json(res, 413, { error: "request_too_large" }, origin);
+        return;
+      }
     }
+  } catch {
+    // A client can disconnect before sending the declared body length. The
+    // async iterator rejects with ECONNRESET; consume it here so the async
+    // request handler does not create an unhandled rejection.
+    if (req.aborted || res.destroyed) return;
+    return json(res, 400, { error: "invalid_request_body" }, origin);
   }
+  if (req.aborted || res.destroyed) return;
 
   let input;
   try {
