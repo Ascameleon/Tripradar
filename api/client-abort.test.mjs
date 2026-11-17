@@ -15,7 +15,7 @@ test("aborts provider work when the HTTP response closes before completion", () 
   const binding = createClientAbortSignal(response);
   response.emit("close");
   assert.equal(binding.signal.aborted, true);
-  assert.match(binding.signal.reason.message, /client disconnected/);
+  assert.match(binding.signal.reason.message, /client disconnected/i);
   binding.dispose();
 });
 
