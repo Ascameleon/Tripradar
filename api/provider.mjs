@@ -13,7 +13,8 @@ function throwIfAborted(signal) {
   if (signal?.aborted) throw signal.reason ?? new Error("Provider request aborted");
 }
 
-async function getToken(fetchImpl = fetch) {
+async function getToken(fetchImpl = fetch, { signal } = {}) {
+  throwIfAborted(signal);
   const id = process.env.AMADEUS_CLIENT_ID;
   const secret = process.env.AMADEUS_CLIENT_SECRET;
   if (!id || !secret) {
@@ -24,9 +25,9 @@ async function getToken(fetchImpl = fetch) {
   }
   const cacheKey = createHash("sha256")
     .update(BASE)
-    .update("\0")
+    .update("\\0")
     .update(id)
-    .update("\0")
+    .update("\\0")
     .update(secret)
     .digest("hex");
   const now = Date.now();
@@ -37,42 +38,91 @@ async function getToken(fetchImpl = fetch) {
   // A rotated or expired bearer token must not remain in process memory while re-authenticating.
   tokenCache = { key: null, value: null, expiresAt: 0 };
 
-  const inFlight = tokenRequests.get(cacheKey);
-  if (inFlight) return inFlight;
+  let request = tokenRequests.get(cacheKey);
+  if (!request) {
+    const controller = new AbortController();
+    request = {
+      controller,
+      waiters: 0,
+      settled: false,
+      promise: null
+    };
+    const authSignal = AbortSignal.any([controller.signal, AbortSignal.timeout(8000)]);
+    const pending = (async () => {
+      const response = await fetchImpl(`${BASE}/v1/security/oauth2/token`, {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          grant_type: "client_credentials",
+          client_id: id,
+          client_secret: secret
+        }),
+        signal: authSignal
+      });
+      if (!response.ok) {
+        const error = new Error("Provider authentication failed");
+        error.status = response.status;
+        throw error;
+      }
+      const data = await response.json();
+      const accessToken = typeof data.access_token === "string" ? data.access_token.trim() : "";
+      if (!accessToken) {
+        const error = new Error("Provider authentication returned no access token");
+        error.status = 502;
+        throw error;
+      }
+      const expiresIn = Number(data.expires_in);
+      const ttlSeconds = Number.isFinite(expiresIn) ? Math.max(0, expiresIn - 60) : 0;
+      // An in-flight request may finish after runtime credentials have rotated again.
+      // Do not cache a token after every caller has abandoned the shared request.
+      if (
+        !controller.signal.aborted &&
+        process.env.AMADEUS_CLIENT_ID === id &&
+        process.env.AMADEUS_CLIENT_SECRET === secret
+      ) {
+        tokenCache = {
+          key: cacheKey,
+          value: accessToken,
+          expiresAt: Date.now() + ttlSeconds * 1000
+        };
+      }
+      return accessToken;
+    })();
+    request.promise = pending;
+    tokenRequests.set(cacheKey, request);
+    pending.then(
+      () => {
+        request.settled = true;
+        if (tokenRequests.get(cacheKey) === request) tokenRequests.delete(cacheKey);
+      },
+      () => {
+        request.settled = true;
+        if (tokenRequests.get(cacheKey) === request) tokenRequests.delete(cacheKey);
+      }
+    );
+  }
 
-  const pending = (async () => {
-    const response = await fetchImpl(`${BASE}/v1/security/oauth2/token`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ grant_type: "client_credentials", client_id: id, client_secret: secret }), signal: AbortSignal.timeout(8000) });
-    if (!response.ok) { const error = new Error("Provider authentication failed"); error.status = response.status; throw error; }
-    const data = await response.json();
-    const accessToken = typeof data.access_token === "string" ? data.access_token.trim() : "";
-    if (!accessToken) {
-      const error = new Error("Provider authentication returned no access token");
-      error.status = 502;
-      throw error;
-    }
-    const expiresIn = Number(data.expires_in);
-    const ttlSeconds = Number.isFinite(expiresIn) ? Math.max(0, expiresIn - 60) : 0;
-    // An in-flight request may finish after runtime credentials have rotated again.
-    // Only cache its bearer token if this credential pair is still the active configuration.
-    if (process.env.AMADEUS_CLIENT_ID === id && process.env.AMADEUS_CLIENT_SECRET === secret) {
-      tokenCache = {
-        key: cacheKey,
-        value: accessToken,
-        expiresAt: Date.now() + ttlSeconds * 1000
-      };
-    }
-    return accessToken;
-  })();
-  tokenRequests.set(cacheKey, pending);
+  request.waiters += 1;
+  let abortHandler;
   try {
-    return await pending;
+    if (!signal) return await request.promise;
+    const aborted = new Promise((_, reject) => {
+      abortHandler = () => reject(signal.reason ?? new Error("Provider request aborted"));
+      signal.addEventListener("abort", abortHandler, { once: true });
+    });
+    throwIfAborted(signal);
+    return await Promise.race([request.promise, aborted]);
   } finally {
-    if (tokenRequests.get(cacheKey) === pending) tokenRequests.delete(cacheKey);
+    if (abortHandler) signal.removeEventListener("abort", abortHandler);
+    request.waiters -= 1;
+    if (request.waiters === 0 && !request.settled) {
+      if (tokenRequests.get(cacheKey) === request) tokenRequests.delete(cacheKey);
+      request.controller.abort(new Error("Provider authentication has no active callers"));
+    }
   }
 }
-
 export async function searchFlights(input, fetchImpl = fetch, { signal } = {}) {
-  const token = await getToken(fetchImpl);
+  const token = await getToken(fetchImpl, { signal });
   throwIfAborted(signal);
   const params = new URLSearchParams({ originLocationCode: input.origin, destinationLocationCode: input.destination, departureDate: input.departureDate, adults: String(input.adults), currencyCode: input.currencyCode, max: "20" });
   if (input.returnDate) params.set("returnDate", input.returnDate);
@@ -107,7 +157,7 @@ export async function searchFlights(input, fetchImpl = fetch, { signal } = {}) {
 }
 
 export async function searchHotels(input, fetchImpl = fetch, { signal } = {}) {
-  const token = await getToken(fetchImpl);
+  const token = await getToken(fetchImpl, { signal });
   throwIfAborted(signal);
   const headers = { authorization: `Bearer ${token}` };
   const hotelParams = new URLSearchParams({ cityCode: input.cityCode, radius: "10", radiusUnit: "KM", hotelSource: "ALL" });
