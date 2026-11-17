@@ -123,7 +123,12 @@ test("TripBoost map-first discovery and PWA metadata are present", () => {
   assert.match(readme, /carte mondiale est l.interface principale/);
   assert.equal(manifest.short_name, "TripBoost");
   assert.equal(manifest.display, "standalone");
-  assert.match(worker, /tripboost-static-v1/);
+  assert.match(worker, /const CACHE_PREFIX = "tripboost-"/);
+  assert.match(worker, /static-v2/);
+  assert.match(worker, /key\.startsWith\(CACHE_PREFIX\)/);
+  assert.match(worker, /request\.mode === "navigate"/);
+  assert.match(worker, /APP_PATHS\.has\(url\.pathname\)/);
+  assert.match(worker, /caches\.match\(INDEX_URL\)/);
   assert.match(worker, /addAll\(APP_FILES\)/);
   assert.match(html, /serviceWorker\.register/);
   assert.ok(html.includes('<script src="./config.js"></script>'));
