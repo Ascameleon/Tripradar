@@ -295,7 +295,8 @@ async function rawGet(port, requestTarget) {
         "Connection: close",
         "",
         ""
-      ].join(String.fromCharCode(13, 10)));    });
+      ].join(String.fromCharCode(13, 10)));
+    });
     socket.on("data", (chunk) => { response += chunk; });
     socket.once("error", reject);
     socket.once("end", () => resolve(response));
