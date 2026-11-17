@@ -533,3 +533,67 @@ test("keeps shared token authentication alive while another caller still waits",
   }
 });
 
+
+
+test("does not cache an OAuth token when authentication resolves after every caller disconnected", async () => {
+  const oldId = process.env.AMADEUS_CLIENT_ID;
+  const oldSecret = process.env.AMADEUS_CLIENT_SECRET;
+  process.env.AMADEUS_CLIENT_ID = "tripboost-late-abandoned-auth-regression";
+  process.env.AMADEUS_CLIENT_SECRET = "late-auth-test-secret";
+  let resolveAuthStarted;
+  const authStarted = new Promise((resolve) => { resolveAuthStarted = resolve; });
+  let resolveLateResponse;
+  const lateResponse = new Promise((resolve) => { resolveLateResponse = resolve; });
+  let markLateTokenParsed;
+  const lateTokenParsed = new Promise((resolve) => { markLateTokenParsed = resolve; });
+  let tokenRequests = 0;
+  let flightRequests = 0;
+  const fakeFetch = async (url) => {
+    if (String(url).includes("/v1/security/oauth2/token")) {
+      tokenRequests += 1;
+      if (tokenRequests === 1) {
+        resolveAuthStarted();
+        // Deliberately ignore AbortSignal to model a transport response racing with cancellation.
+        return lateResponse;
+      }
+      return {
+        ok: true,
+        json: async () => ({ access_token: "fresh-after-abort-token", expires_in: 3600 })
+      };
+    }
+    flightRequests += 1;
+    return { ok: true, json: async () => ({ data: [] }) };
+  };
+  const controller = new AbortController();
+  const input = {
+    origin: "ALG", destination: "CDG", departureDate: "2027-11-10",
+    adults: 1, currencyCode: "EUR"
+  };
+
+  try {
+    const abandoned = searchFlights(input, fakeFetch, { signal: controller.signal });
+    await authStarted;
+    controller.abort(new Error("only caller disconnected"));
+    await assert.rejects(abandoned, /only caller disconnected/);
+
+    resolveLateResponse({
+      ok: true,
+      json: async () => {
+        markLateTokenParsed();
+        return { access_token: "late-abandoned-token", expires_in: 3600 };
+      }
+    });
+    await lateTokenParsed;
+    await new Promise((resolve) => setImmediate(resolve));
+
+    const offers = await searchFlights(input, fakeFetch);
+    assert.deepEqual(offers, []);
+    assert.equal(tokenRequests, 2, "a late token from an abandoned request must not enter the cache");
+    assert.equal(flightRequests, 1, "only the fresh authenticated request may reach flight search");
+  } finally {
+    if (oldId === undefined) delete process.env.AMADEUS_CLIENT_ID;
+    else process.env.AMADEUS_CLIENT_ID = oldId;
+    if (oldSecret === undefined) delete process.env.AMADEUS_CLIENT_SECRET;
+    else process.env.AMADEUS_CLIENT_SECRET = oldSecret;
+  }
+});
