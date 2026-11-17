@@ -289,10 +289,13 @@ async function rawGet(port, requestTarget) {
     let response = "";
     socket.setEncoding("utf8");
     socket.once("connect", () => {
-      socket.end(
-        `GET ${requestTarget} HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n`
-      );
-    });
+      socket.end([
+        `GET ${requestTarget} HTTP/1.1`,
+        "Host: localhost",
+        "Connection: close",
+        "",
+        ""
+      ].join(String.fromCharCode(13, 10)));    });
     socket.on("data", (chunk) => { response += chunk; });
     socket.once("error", reject);
     socket.once("end", () => resolve(response));
@@ -333,7 +336,7 @@ test("malformed request targets return 400 without terminating the API", async (
   assert.equal(ready, true, "API must become ready");
 
   const malformed = await rawGet(port, "http://[");
-  assert.match(malformed, /^HTTP\\/1\\.1 400 /);
+  assert.ok(malformed.startsWith("HTTP/1.1 400 "), malformed);
   assert.match(malformed, /invalid_request_target/);
   assert.equal(child.exitCode, null, "the malformed request must not crash the API process");
 
