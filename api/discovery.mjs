@@ -42,12 +42,19 @@ export async function searchDiscovery(input, searchFlightsImpl, { maxConcurrency
   const failed = results.filter((result) => result.failed);
   const offers = successful.flatMap((result) =>
     result.offers
-      .filter((offer) => offer && typeof offer === "object" && Number.isFinite(Number(offer.price)) && Number(offer.price) > 0)
+      .filter((offer) =>
+        offer !== null &&
+        typeof offer === "object" &&
+        !Array.isArray(offer) &&
+        typeof offer.price === "number" &&
+        Number.isFinite(offer.price) &&
+        offer.price > 0
+      )
       .map((offer) => ({
         ...offer,
         destination: offer.destination || result.destination
       }))
-  ).sort((a, b) => Number(a.price) - Number(b.price));
+  ).sort((a, b) => a.price - b.price);
 
   return {
     offers,
