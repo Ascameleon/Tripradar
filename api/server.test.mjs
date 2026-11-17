@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
-import { request as httpRequest } from "node:http";
+import { createServer as createHttpServer, request as httpRequest } from "node:http";
 
 async function getWithHost(port, path, origin, host) {
   return new Promise((resolve, reject) => {
@@ -174,4 +174,110 @@ test("global discovery endpoint is disabled by default and does not call a suppl
     error: "discovery_disabled",
     message: "La recherche mondiale est désactivée. Activez explicitement TRIPBOOST_DISCOVERY_ENABLED=true après validation des coûts fournisseur."
   });
+});
+
+
+test("global discovery aborts active supplier requests when the HTTP client disconnects", async (t) => {
+  const apiPort = await freePort();
+  let flightRequests = 0;
+  let abortedFlightResponses = 0;
+  let resolveFlightsStarted;
+  const flightsStarted = new Promise((resolve) => { resolveFlightsStarted = resolve; });
+
+  const providerServer = createHttpServer((req, res) => {
+    const pathname = new URL(req.url || "/", "http://provider").pathname;
+    if (req.method === "POST" && pathname === "/v1/security/oauth2/token") {
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ access_token: "local-test-token", expires_in: 3600 }));
+      return;
+    }
+    if (req.method === "GET" && pathname === "/v2/shopping/flight-offers") {
+      flightRequests += 1;
+      const fallback = setTimeout(() => {
+        if (!res.destroyed) {
+          res.writeHead(200, { "content-type": "application/json" });
+          res.end(JSON.stringify({ data: [] }));
+        }
+      }, 10_000);
+      res.once("close", () => {
+        clearTimeout(fallback);
+        if (!res.writableEnded) abortedFlightResponses += 1;
+      });
+      if (flightRequests === 2) resolveFlightsStarted();
+      return;
+    }
+    res.writeHead(404);
+    res.end();
+  });
+  await new Promise((resolve, reject) => {
+    providerServer.once("error", reject);
+    providerServer.listen(0, "127.0.0.1", resolve);
+  });
+  const providerPort = providerServer.address().port;
+  const origin = "https://tripboost.example";
+  const child = spawn(process.execPath, ["api/server.mjs"], {
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      PORT: String(apiPort),
+      ALLOWED_ORIGIN: origin,
+      AMADEUS_BASE_URL: `http://127.0.0.1:${providerPort}`,
+      AMADEUS_CLIENT_ID: "local-test-client",
+      AMADEUS_CLIENT_SECRET: "local-test-secret",
+      TRIPBOOST_DISCOVERY_ENABLED: "true"
+    },
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  let output = "";
+  child.stdout.on("data", (chunk) => { output += chunk; });
+  child.stderr.on("data", (chunk) => { output += chunk; });
+  t.after(async () => {
+    if (child.exitCode === null) child.kill("SIGTERM");
+    await new Promise((resolve) => providerServer.close(() => resolve()));
+  });
+
+  const base = `http://127.0.0.1:${apiPort}`;
+  let ready = false;
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    if (child.exitCode !== null) throw new Error("API exited before ready: " + output);
+    try {
+      const response = await fetch(base + "/api/health", { signal: AbortSignal.timeout(300) });
+      if (response.ok) { ready = true; break; }
+    } catch {}
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  assert.equal(ready, true, "API must become ready");
+
+  const request = httpRequest({
+    hostname: "127.0.0.1",
+    port: apiPort,
+    path: "/api/discovery/search",
+    method: "POST",
+    headers: { origin, "content-type": "application/json" }
+  });
+  request.once("error", () => {});
+  request.end(JSON.stringify({
+    origin: "ALG",
+    destinations: ["CDG", "IST", "JFK", "LHR"],
+    departureDate: "2027-11-10",
+    adults: 1,
+    currencyCode: "EUR"
+  }));
+
+  let startTimer;
+  const startedInTime = await Promise.race([
+    flightsStarted.then(() => true),
+    new Promise((resolve) => { startTimer = setTimeout(() => resolve(false), 3_000); })
+  ]);
+  clearTimeout(startTimer);
+  assert.equal(startedInTime, true, "two supplier requests should start before cancellation");
+  request.destroy();
+
+  const deadline = Date.now() + 3_000;
+  while (abortedFlightResponses < 2 && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  assert.equal(abortedFlightResponses, 2, "both in-flight supplier responses must be cancelled");
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  assert.equal(flightRequests, 2, "no later destination request may start after client disconnect");
 });

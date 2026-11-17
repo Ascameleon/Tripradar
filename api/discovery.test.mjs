@@ -62,3 +62,36 @@ test("discovery rejects unbounded concurrency and invalid destination counts", a
   await assert.rejects(() => searchDiscovery({ ...input, destinations: [] }, async () => []), TypeError);
   await assert.rejects(() => searchDiscovery({ ...input, destinations: Array(10).fill("CDG") }, async () => []), TypeError);
 });
+
+
+test("discovery propagates client abort and does not schedule remaining destinations", async () => {
+  const controller = new AbortController();
+  const started = [];
+  let resolveStarted;
+  const bothStarted = new Promise((resolve) => { resolveStarted = resolve; });
+
+  const pending = searchDiscovery(input, async ({ destination }, { signal }) => {
+    started.push(destination);
+    if (started.length === 2) resolveStarted();
+    return new Promise((resolve, reject) => {
+      if (signal.aborted) return reject(signal.reason);
+      signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+    });
+  }, { maxConcurrency: 2, signal: controller.signal });
+
+  await bothStarted;
+  controller.abort(new Error("client disconnected"));
+  await assert.rejects(pending, /client disconnected/);
+  assert.deepEqual(started, ["CDG", "IST"]);
+});
+
+test("discovery rejects an already-aborted signal before calling the provider", async () => {
+  const controller = new AbortController();
+  controller.abort(new Error("already disconnected"));
+  let calls = 0;
+  await assert.rejects(
+    searchDiscovery(input, async () => { calls += 1; return []; }, { signal: controller.signal }),
+    /already disconnected/
+  );
+  assert.equal(calls, 0);
+});

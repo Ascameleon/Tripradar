@@ -393,3 +393,42 @@ test("keeps concurrent Amadeus token requests isolated by credential key", async
     else process.env.AMADEUS_CLIENT_SECRET = oldSecret;
   }
 });
+
+
+test("aborts an in-flight flight search when its HTTP client disconnects", async () => {
+  const oldId = process.env.AMADEUS_CLIENT_ID;
+  const oldSecret = process.env.AMADEUS_CLIENT_SECRET;
+  process.env.AMADEUS_CLIENT_ID = "tripboost-client-abort-regression";
+  process.env.AMADEUS_CLIENT_SECRET = "client-abort-test-secret";
+  let resolveFlightStarted;
+  const flightStarted = new Promise((resolve) => { resolveFlightStarted = resolve; });
+  let flightSignal;
+  const fakeFetch = async (url, options = {}) => {
+    if (String(url).includes("/v1/security/oauth2/token")) {
+      return { ok: true, json: async () => ({ access_token: "abort-test-token", expires_in: 3600 }) };
+    }
+    flightSignal = options.signal;
+    resolveFlightStarted();
+    return new Promise((resolve, reject) => {
+      if (options.signal.aborted) return reject(options.signal.reason);
+      options.signal.addEventListener("abort", () => reject(options.signal.reason), { once: true });
+    });
+  };
+  const controller = new AbortController();
+  try {
+    const pending = searchFlights({
+      origin: "ALG", destination: "CDG", departureDate: "2027-11-10",
+      adults: 1, currencyCode: "EUR"
+    }, fakeFetch, { signal: controller.signal });
+    await flightStarted;
+    assert.equal(flightSignal.aborted, false);
+    controller.abort(new Error("client disconnected"));
+    await assert.rejects(pending, /client disconnected/);
+    assert.equal(flightSignal.aborted, true);
+  } finally {
+    if (oldId === undefined) delete process.env.AMADEUS_CLIENT_ID;
+    else process.env.AMADEUS_CLIENT_ID = oldId;
+    if (oldSecret === undefined) delete process.env.AMADEUS_CLIENT_SECRET;
+    else process.env.AMADEUS_CLIENT_SECRET = oldSecret;
+  }
+});

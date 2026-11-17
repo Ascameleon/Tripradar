@@ -2,6 +2,7 @@ import http from "node:http";
 import { searchFlights, searchHotels } from "./provider.mjs";
 import { searchDiscovery } from "./discovery.mjs";
 import { validateSearch, validateHotelSearch, validateDiscoverySearch } from "./validation.mjs";
+import { createClientAbortSignal } from "./client-abort.mjs";
 
 const port = Number(process.env.PORT || 3000);
 const allowedOrigin = process.env.ALLOWED_ORIGIN || "http://localhost:3000";
@@ -107,6 +108,7 @@ const server = http.createServer(async (req, res) => {
     return json(res, 429, { error: "rate_limited", message: "Trop de recherches. Réessayez dans une minute." }, origin);
   }
 
+  const clientAbort = createClientAbortSignal(res);
   try {
     if (isDiscoverySearch) {
       // A map-wide search can fan out to nine supplier requests. Keep it disabled
@@ -123,7 +125,11 @@ const server = http.createServer(async (req, res) => {
           message: "Aucune source tarifaire vérifiée n'est configurée."
         }, origin);
       }
-      const result = await searchDiscovery(search, searchFlights, { maxConcurrency: 2 });
+      const result = await searchDiscovery(
+        search,
+        (params, { signal } = {}) => searchFlights(params, fetch, { signal }),
+        { maxConcurrency: 2, signal: clientAbort.signal }
+      );
       if (!result.searchedDestinations.length) {
         return json(res, 503, {
           error: "provider_unavailable",
@@ -132,14 +138,19 @@ const server = http.createServer(async (req, res) => {
       }
       return json(res, 200, { source: "Amadeus", checkedAt: new Date().toISOString(), ...result }, origin);
     }
-    const offers = isFlightSearch ? await searchFlights(search) : await searchHotels(search);
+    const offers = isFlightSearch
+      ? await searchFlights(search, fetch, { signal: clientAbort.signal })
+      : await searchHotels(search, fetch, { signal: clientAbort.signal });
     return json(res, 200, { source: "Amadeus", checkedAt: new Date().toISOString(), offers }, origin);
   } catch (error) {
+    if (clientAbort.signal.aborted || res.destroyed) return;
     const status = error?.status === 429 || error?.status === 503 ? 503 : 502;
     return json(res, status, {
       error: "provider_unavailable",
       message: "Aucune offre vérifiée disponible pour le moment."
     }, origin);
+  } finally {
+    clientAbort.dispose();
   }
 });
 
