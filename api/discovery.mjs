@@ -41,10 +41,12 @@ export async function searchDiscovery(input, searchFlightsImpl, { maxConcurrency
   const successful = results.filter((result) => !result.failed);
   const failed = results.filter((result) => result.failed);
   const offers = successful.flatMap((result) =>
-    result.offers.map((offer) => ({
-      ...offer,
-      destination: offer.destination || result.destination
-    }))
+    result.offers
+      .filter((offer) => offer && typeof offer === "object" && Number.isFinite(Number(offer.price)) && Number(offer.price) > 0)
+      .map((offer) => ({
+        ...offer,
+        destination: offer.destination || result.destination
+      }))
   ).sort((a, b) => Number(a.price) - Number(b.price));
 
   return {
